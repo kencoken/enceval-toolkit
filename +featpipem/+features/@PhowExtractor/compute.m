@@ -1,0 +1,13 @@
+function [feats, frames] = compute(obj, im)
+%COMPUTE Summary of this function goes here
+%   Detailed explanation goes here
+
+    [frames, feats] = vl_phow(im, 'Verbose', obj.verbose, ...
+        'Sizes', obj.sizes, 'Fast', obj.fast, 'step', obj.step, ...
+        'Color', obj.color, 'ContrastThreshold', obj.contrast_threshold, ...
+        'WindowSize', obj.window_size, 'Magnif', obj.magnif, ...
+        'FloatDescriptors', obj.float_descriptors);
+    feats = single(feats);
+    
+end
+

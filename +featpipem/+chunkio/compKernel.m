@@ -3,11 +3,6 @@ function K = compKernel(chunk_files)
 %   chunk_files -  cell array of paths to chunk files to use to compute K,
 %                  with assumed complete monotonically increasing set of
 %                  indeces
-%   index_offset - OPTIONAL a pair of (chunk index/index offset) which
-%                  permits 'index offset' to be added to the index fields
-%                  of all chunks with an index greater than 'chunk index'
-%                  in 'chunk_files'. This is useful for computing K for
-%                  combined data splits (e.g. TRAIN+VAL)
 
 % process and check input arguments -----
 

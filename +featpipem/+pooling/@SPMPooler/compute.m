@@ -44,7 +44,7 @@ function pcode = compute(obj, imsize, feats, frames)
     
     % now merge to form subsequent bin levels
     if bin_quad_levels > 1
-        prev_level_bin_divs = opts.binQuadDivs;
+        prev_level_bin_divs = obj.quad_divs;
         prev_level_start_bin = 1;
         for i = 2:bin_quad_levels
             level_bin_divs = prev_level_bin_divs/2;

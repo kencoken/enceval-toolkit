@@ -14,7 +14,7 @@ function [acc, confus] = evalAccuracy(imdb, scoremat, testset)
 [estLabel, estLabel] = max(scoremat, [], 1); %#ok<ASGLU>
 
 % get ground truth labels in form of a cell array of length C
-[gt set_size] = getImdbGT(imdb, {testset});
+[gt set_size] = featpipem.utility.getImdbGT(imdb, {testset});
 
 % copy across to a vector of length set_size, with a single label
 % associated with each image

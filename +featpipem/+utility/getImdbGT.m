@@ -56,13 +56,14 @@ for ci = 1:n_classes
 
         % get ids of images in testset
         image_ids = imdb.images.id(imdb.images.set == setid);
-        image_ids_offset = image_ids(1)-1;
 
-        gt{ci,si} = intersect(image_ids, imdb.classes.imageIds{ci});
+        % set output vector to INDEX of images in the set which are
+        % also contained within the ground truth of the current class
+        [gt{ci,si}, gt{ci,si}] = ...
+            intersect(image_ids, imdb.classes.imageIds{ci});
         if isempty(gt{ci,si})
             error(['No ground truth found for specified testset: ' sets{si}]);
         end
-        gt{ci,si} = gt{ci,si} - image_ids_offset;
         
         % fill set_sizes if first iteration
         if ci == 1

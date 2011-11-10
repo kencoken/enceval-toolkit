@@ -11,6 +11,7 @@ function [acc, confus] = evalAccuracy(imdb, scoremat, testset)
 % -------------------------------------------------
 
 % compute estimated labels from scoremat
+fprintf('Computing estimated labels from scoremat...\n');
 [estLabel, estLabel] = max(scoremat, [], 1); %#ok<ASGLU>
 
 % get ground truth labels in form of a cell array of length C
@@ -18,7 +19,8 @@ function [acc, confus] = evalAccuracy(imdb, scoremat, testset)
 
 % copy across to a vector of length set_size, with a single label
 % associated with each image
-gtLabel = ones(set_size,1)*-1;
+fprintf('Extracting single-class ground truth labels from IMDB...\n');
+gtLabel = ones(1,set_size)*-1;
 for i = 1:set_size
     for ci = 1:length(gt)
         % check if current class exists in current image
@@ -41,12 +43,14 @@ nClasses = length(imdb.classes.name);
 % compute confusion matrix
 % -------------------------------------------------
 
+fprintf('Computing confusion matrix...\n');
 idx = sub2ind([nClasses, nClasses], ...
               gtLabel, estLabel);
 confus = zeros(nClasses);
 confus = vl_binsum(confus, ones(size(idx)), idx);
 
 % normalize confusion matrix
+fprintf('Normalizing confusion matrix and computing accuracies...\n');
 for i = 1:nClasses
     image_count = sum(gtLabel == i);
     for j = 1:nClasses
@@ -62,6 +66,8 @@ acc = zeros(nClasses,1);
 for ci = 1:nClasses
     acc(ci) = confus(ci,ci);
 end
+
+fprintf('DONE\n');
 
 end
 

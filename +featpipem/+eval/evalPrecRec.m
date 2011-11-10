@@ -12,6 +12,7 @@ end
 
 AP = zeros(1,size(scoremat,1));
 
+fprintf('Retrieving ground truth from IMDB...\n');
 gt = featpipem.utility.getImdbGT(imdb, {testset}, 'outputSignedLabels', true);
 
 for ci = 1:size(scoremat,1)    
@@ -22,6 +23,7 @@ for ci = 1:size(scoremat,1)
     end
     
     % get indices of current class sorted in descending order of confidence
+    fprintf('Computing precision/recall...\n');
     [sortidx sortidx] = sort(scoremat(ci,:),'descend'); %#ok<ASGLU>
     tp = gt_cls(sortidx)>0;
     fp = gt_cls(sortidx)<0;
@@ -31,7 +33,10 @@ for ci = 1:size(scoremat,1)
     rec = tp/sum(gt_cls>0);
     prec = tp./(fp+tp);
     
+    fprintf('Computing APs...\n');
     AP(ci) = featpipem.eval.VOCdevkit.VOCap(dataset, rec, prec);
+    
+    fprintf('DONE\n');
     
 end
 

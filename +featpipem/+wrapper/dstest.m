@@ -76,9 +76,9 @@ for si = 1:length(prms.splits.test)
     [scoremat{si}, scoremat{si}] = featpipem.chunkio.testChunks(chunk_files(prms.splits.test{si}), classifier);
     switch prms.experiment.evalusing
         case 'precrec'
-            res{si} = featpipem.eval.evalPrecRec(prms.imdb, prms.experiment.dataset, scoremat{si}, prms.splits.test{si});
+            res{si} = featpipem.eval.evalPrecRec(prms.imdb, scoremat{si}, prms.splits.test{si}, prms.experiment.dataset);
         case 'accuracy'
-            res{si} = featpipem.eval.evalAccuracy(prms.imdb, prms.experiment.dataset, scoremat{si}, prms.splits.test{si});
+            res{si} = featpipem.eval.evalAccuracy(prms.imdb, scoremat{si}, prms.splits.test{si});
         otherwise
             error('Unknown evaluation method %s', prms.experiment.evalusing);
     end

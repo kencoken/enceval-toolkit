@@ -1,6 +1,14 @@
-function AP = evalPrecRec(imdb, dataset, scoremat, testset)
-%EVALPRECREC Summary of this function goes here
-%   Detailed explanation goes here
+function AP = evalPrecRec(imdb, scoremat, testset, dataset)
+%EVALPRECREC Evaluate a dataset using average precision
+%   If the last parameter 'dataset' is not specified or is 'VOC2010' or
+%   greater, the VOC2010+ precision-recall calculation methodology is used
+%   (calculating precision continuously). If dataset is 'VOC2007-VOC2009',
+%   the VOC2007-VOC2009 precision-recall calculation methodology is used
+%   (calculating precision at fixed 0.1 intervals)
+
+if nargin < 4 || isempty(dataset)
+    dataset = '';
+end
 
 AP = zeros(1,size(scoremat,1));
 

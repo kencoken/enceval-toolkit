@@ -12,7 +12,8 @@ classdef LibSvm < handle & featpipem.classification.svm.GenericSvm
             opts.c = 10;
             opts.bias_mul = 1;
             [opts, varargin] =  vl_argparse(opts, varargin);
-            vl_override(obj, opts);
+            obj.c = opts.c;
+            obj.bias_mul = opts.bias_mul;
             
             % load in the model if provided
             modelstore.model = [];

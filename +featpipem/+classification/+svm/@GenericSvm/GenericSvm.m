@@ -7,9 +7,16 @@ classdef GenericSvm < handle
         model
     end
     
+    methods
+        function set_model(obj, model)
+            obj.model = model;
+        end
+        function model = get_model(obj)
+            model = obj.model;
+        end
+    end
+    
     methods(Abstract)
-        set_model(obj, model)
-        model = get_model(obj)
         % Training Function for SVM ---------------------------------------
         % input - a matrix of column features to use for training
         % labels - a cell array of length K classes, with each cell giving

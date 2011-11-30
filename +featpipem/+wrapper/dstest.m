@@ -20,7 +20,7 @@ if ~isfield(prms.experiment, 'classif_tag')
     prms.experiment.classif_tag = '';
 end
 
-kChunkIndexFile = fullfile(prms.paths.codes, sprintf('%s_chunkindex.mat', prms.experiment.name));
+kChunkIndexFile = fullfile(prms.paths.codes, sprintf('%s_chunkindex.mat', prms.experiment.codes_suffix));
 kKernelFile = fullfile(prms.paths.compdata, sprintf('%s_%s_K.mat', prms.experiment.name, trainSetStr));
 kClassifierFile = fullfile(prms.paths.compdata, sprintf('%s_%s_classifier%s.mat', prms.experiment.name, trainSetStr, prms.experiment.classif_tag));
 kResultsFile = fullfile(prms.paths.results, sprintf('%s_%s_results%s.mat', prms.experiment.name, testSetStr, prms.experiment.classif_tag));
@@ -43,27 +43,42 @@ for si = 1:length(prms.splits.train)
 end
 
 % --------------------------------
-% Compute Kernel
+% Compute Kernel (if using a dual classifier)
 % --------------------------------
-if exist(kKernelFile,'file')
-    load(kKernelFile);
-else
-    K = featpipem.chunkio.compKernel(train_chunks);
-    % save kernel matrix to file
-    save(kKernelFile, 'K');
+if isa(classifier, 'LibSvmDual')
+    if exist(kKernelFile,'file')
+        load(kKernelFile);
+    else
+        K = featpipem.chunkio.compKernel(train_chunks);
+        % save kernel matrix to file
+        save(kKernelFile, 'K');
+    end
 end
 
 % --------------------------------
-% Train Classifier (for the moment assumes dual SVM)
+% Train Classifier
 % --------------------------------
-if exist(kClassifierFile,'file')
-    load(kClassifierFile);
-    classifier.set_model(model); %#ok<NODEF>
+if isa(classifier, 'LibSvmDual')
+    % ...........................
+    % training for svm in dual
+    % ...........................
+    if exist(kClassifierFile,'file')
+        load(kClassifierFile);
+        classifier.set_model(model); %#ok<NODEF>
+    else
+        labels_train = featpipem.utility.getImdbGT(prms.imdb, prms.splits.train, 'concatOutput', true);
+        classifier.train(K, labels_train, train_chunks);
+        model = classifier.get_model(); %#ok<NASGU>
+        save(kClassifierFile,'model');
+    end
 else
+    % ...........................
+    % training for svm in primal
+    % ...........................
     labels_train = featpipem.utility.getImdbGT(prms.imdb, prms.splits.train, 'concatOutput', true);
-    classifier.train(K, labels_train, train_chunks);
-    model = classifier.get_model(); %#ok<NASGU>
-    save(kClassifierFile,'model');
+    trainvecs = featpipem.chunkio.loadChunksIntoMat(train_chunks);
+    classifier.train(trainvecs, labels_train);
+    clear trainvecs;
 end
 
 % --------------------------------

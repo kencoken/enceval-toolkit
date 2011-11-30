@@ -21,12 +21,10 @@ classdef LibSvmDual < handle & featpipem.classification.svm.GenericSvm
             obj.model = [];
             obj.modelIsWVect = false;
         end
+        % override set_model to update modelIsWVect also
         function set_model(obj, model)
-            obj.model = model;
+            set_model@GenericSvm(obj, model);
             obj.modelIsWVect = ~iscell(obj.model);
-        end
-        function model = get_model(obj)
-            model = obj.model;
         end
         train(obj, input, labels, chunk_files, index_offset)
         [est_label, scoremat] = test(obj, input)

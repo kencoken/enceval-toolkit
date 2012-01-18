@@ -8,19 +8,17 @@ function [est_label, scoremat] = test(obj, input)
     end
     
     % ensure input is of correct form
-    if isa(input,'double')
-        input = input';
-    else
-        input = sparse(double(input'));
+    if ~isa(input,'double')
+        input = sparse(double(input));
     end
     
     % prepare output matrix
-    scoremat = zeros(length(modeldata.libsvm), size(input,2));
+    scoremat = zeros(length(obj.model.libsvm), size(input,2));
     
     % test models for each class in turn
-    parfor ci = 1:length(obj.model.libsvm)
+    for ci = 1:length(obj.model.libsvm)
         [scorevec scorevec scorevec] = ...
-            svmpredict(zeros(size(input,1),1), input, ...
+            svmpredict(zeros(size(input,2),1), input', ...
             obj.model.libsvm{ci}); %#ok<PFBNS,ASGLU>
         if obj.model.libsvm_flipscore(ci)
             scorevec = -scorevec;

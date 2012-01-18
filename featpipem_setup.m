@@ -34,7 +34,13 @@ end
 
 cd ../../
 
+cd +featpipem/+classification/+svm/@LibLinearMex
 
+mex -O manage_class.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
+mex -O mextest.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
+mex -O mextrain.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
+
+cd ../../../../
 
 
 

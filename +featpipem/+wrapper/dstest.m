@@ -45,7 +45,7 @@ end
 % --------------------------------
 % Compute Kernel (if using a dual classifier)
 % --------------------------------
-if isa(classifier, 'LibSvmDual')
+if isa(classifier, 'featpipem.classification.svm.LibSvmDual')
     if exist(kKernelFile,'file')
         load(kKernelFile);
     else
@@ -58,7 +58,7 @@ end
 % --------------------------------
 % Train Classifier
 % --------------------------------
-if isa(classifier, 'LibSvmDual')
+if isa(classifier, 'featpipem.classification.svm.LibSvmDual')
     % ...........................
     % training for svm in dual
     % ...........................

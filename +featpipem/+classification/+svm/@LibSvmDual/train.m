@@ -2,16 +2,12 @@ function train(obj, input, labels, chunk_files)
 %TRAIN Testing function for LIBSVM (using dual formulation)
 %   Refer to GenericSVM for interface definition
 %   'input' in this case is the precomputed kernel matrix
-%   the optional input 'chunk_files' if specified,
+%   the optional input 'train_codes_or_chunk_files' if specified,
 %   cause the computed model to be stored as a w vector as in the primal
 %   case, else the SVM model from LIBSVM is stored internally directly
 
     % process and check input arguments -----
 
-    if ~iscell(chunk_files)
-        error(['chunk_files must be either a cell of strings, or cell ' ...
-            'of cell of strings (to support multiple input sets)']);
-    end
     % if the input is just a cell array of strings, nest it in a second
     % level (as this is the form used when accepting multiple input test
     % sets)
@@ -46,9 +42,9 @@ function train(obj, input, labels, chunk_files)
         % determine output vector size and preallocate model
         ch = load(chunk_files{1}{1});
         featdim = size(ch.chunk, 1);
+        clear ch;
         w_pf = zeros(featdim, length(labels));
         b_pf = zeros(1, length(labels));
-        clear ch;
         % load in SVs
         %for ci = 1:length(labels)
         parfor ci = 1:length(labels)

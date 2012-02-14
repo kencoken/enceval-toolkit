@@ -16,7 +16,7 @@ classdef KmeansCodebkGen < handle & featpipem.codebkgen.GenericCodebkGen
             obj.trainimage_limit = -1;
             obj.maxcomps = ceil(cluster_count/4);
         end
-        codebook = train(obj, imlist)
+        codebook = train(obj, imlist, varargin)
     end
     
 end

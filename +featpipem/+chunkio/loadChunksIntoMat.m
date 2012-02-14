@@ -39,7 +39,7 @@ for si = 1:length(chunk_files)
             for i = 1:length(chunk_files)
                 chunkfilecount = chunkfilecount + length(chunk_files{i});
             end
-            mat = zeros(featdim, featcount*chunkfilecount);
+            mat = cast(zeros(featdim, featcount*chunkfilecount), class(ch.chunk));
         end
         
         % now copy over the chunk

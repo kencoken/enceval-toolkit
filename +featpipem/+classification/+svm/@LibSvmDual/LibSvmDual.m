@@ -26,7 +26,7 @@ classdef LibSvmDual < handle & featpipem.classification.svm.GenericSvm
             set_model@GenericSvm(obj, model);
             obj.modelIsWVect = ~iscell(obj.model);
         end
-        train(obj, input, labels, chunk_files, index_offset)
+        train(obj, input, labels, chunk_files)
         [est_label, scoremat] = test(obj, input)
         
     end

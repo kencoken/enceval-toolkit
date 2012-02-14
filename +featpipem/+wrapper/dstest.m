@@ -75,10 +75,17 @@ else
     % ...........................
     % training for svm in primal
     % ...........................
-    labels_train = featpipem.utility.getImdbGT(prms.imdb, prms.splits.train, 'concatOutput', true);
-    trainvecs = featpipem.chunkio.loadChunksIntoMat(train_chunks);
-    classifier.train(trainvecs, labels_train);
-    clear trainvecs;
+    if exist(kClassifierFile,'file')
+        load(kClassifierFile);
+        classifier.set_model(model); %#ok<NODEF>
+    else
+        labels_train = featpipem.utility.getImdbGT(prms.imdb, prms.splits.train, 'concatOutput', true);
+        trainvecs = featpipem.chunkio.loadChunksIntoMat(train_chunks);
+        classifier.train(trainvecs, labels_train);
+        model = classifier.get_model(); %#ok<NASGU>
+        save(kClassifierFile,'model');
+        clear trainvecs;
+    end
 end
 
 % --------------------------------

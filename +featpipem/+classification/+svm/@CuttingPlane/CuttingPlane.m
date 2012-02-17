@@ -1,4 +1,4 @@
-classdef CuttingPlane < handle & featpipem.classification.svm.GenericSvm
+classdef CuttingPlane < handle & featpipem.classification.svm.LinearSvm
     %CUTTINGPLANE Train an SVM classifier using MATLAB cutting plane method
     
     properties
@@ -22,6 +22,7 @@ classdef CuttingPlane < handle & featpipem.classification.svm.GenericSvm
         end
         train(obj, input, labels)
         [est_label, scoremat] = test(obj, input)
+        WMat = getWMat(obj)
         
     end
     

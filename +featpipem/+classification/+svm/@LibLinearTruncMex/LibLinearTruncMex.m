@@ -1,4 +1,4 @@
-classdef LibLinearTruncMex < handle & featpipem.classification.svm.GenericSvm
+classdef LibLinearTruncMex < handle & featpipem.classification.svm.LinearSvm
     %LIBLINEARTRUNCMEX Train an SVM classifier using the LIBLINEAR library
     %(training code is in C)
     
@@ -36,6 +36,7 @@ classdef LibLinearTruncMex < handle & featpipem.classification.svm.GenericSvm
             est_label = est_label';
             scoremat = scoremat';
         end
+        WMat = getWMat(obj)
         
     end
     

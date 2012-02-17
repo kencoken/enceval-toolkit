@@ -1,4 +1,4 @@
-classdef LibSvm < handle & featpipem.classification.svm.GenericSvm
+classdef LibSvm < handle & featpipem.classification.svm.LinearSvm
     %LIBSVM Train an SVM classifier using the LIBSVM library
     
     properties
@@ -22,6 +22,7 @@ classdef LibSvm < handle & featpipem.classification.svm.GenericSvm
         end
         train(obj, input, labels)
         [est_label, scoremat] = test(obj, input)
+        WMat = getWMat(obj)
         
     end
     

@@ -1,4 +1,4 @@
-classdef LibSvmDual < handle & featpipem.classification.svm.GenericSvm
+classdef LibSvmDual < handle & featpipem.classification.svm.LinearSvm
     %LIBSVMDUAL Train an SVM classifier using the LIBSVM library
     %   in the dual formulation (pre-computing the kernel matrix)
     
@@ -23,11 +23,12 @@ classdef LibSvmDual < handle & featpipem.classification.svm.GenericSvm
         end
         % override set_model to update modelIsWVect also
         function set_model(obj, model)
-            set_model@GenericSvm(obj, model);
+            set_model@featpipem.classification.svm.LinearSvm(obj, model);
             obj.modelIsWVect = ~iscell(obj.model);
         end
         train(obj, input, labels, chunk_files)
         [est_label, scoremat] = test(obj, input)
+        WMat = getWMat(obj)
         
     end
     

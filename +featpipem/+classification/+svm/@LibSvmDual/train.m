@@ -50,7 +50,7 @@ function train(obj, input, labels, chunk_files)
         parfor ci = 1:length(labels)
             fprintf('Calculating w vector for class %d of %d...\n', ci, length(labels));
             w_pf(:,ci) = single(featpipem.chunkio.compWFromKT(chunk_files, libsvm{ci}.SVs, libsvm{ci}.sv_coef));
-            b_pf(ci) = single(libsvm{ci}.rho);
+            b_pf(ci) = -single(libsvm{ci}.rho);
             % invert labels if necessary
             if labels{ci}(1) ~= 1
                 w_pf(:,ci) = w_pf(:,ci)*-1;

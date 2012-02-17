@@ -18,10 +18,11 @@ end
 
 kChunkIndexFile = fullfile(prms.paths.codes, sprintf('%s_chunkindex.mat', prms.experiment.codes_suffix));
 kPQCodebookFile = prms.pqcodebook;
-kPQCodesFile = fullfile(prms.paths.codes, sprintf('%s_pqcodes.mat', prms.experiment.codes_suffix));
-kPQInvIdxFile = fullfile(prms.paths.compdata, sprintf('%s_pqinvidx.mat', prms.experiment.codes_suffix));
-kClassifierFile = fullfile(prms.paths.compdata, sprintf('%s_%s_pqclassifier%s.mat', prms.experiment.name, trainSetStr, prms.experiment.classif_tag));
-kResultsFile = fullfile(prms.paths.results, sprintf('%s_%s_pqresults%s.mat', prms.experiment.name, testSetStr, prms.experiment.classif_tag));
+kPQCodesFile = fullfile(prms.paths.codes, sprintf('%s_pq%scodes.mat', prms.experiment.codes_suffix, prms.experiment.pq_tag));
+kPQInvIdxFile = fullfile(prms.paths.compdata, sprintf('%s_pq%sinvidx.mat', prms.experiment.codes_suffix, prms.experiment.pq_tag));
+kKernelFile = fullfile(prms.paths.compdata, sprintf('%s_%s_K.mat', prms.experiment.name, trainSetStr));
+kClassifierFile = fullfile(prms.paths.compdata, sprintf('%s_%s_classifier%s.mat', prms.experiment.name, trainSetStr, prms.experiment.classif_tag));
+kResultsFile = fullfile(prms.paths.results, sprintf('%s_%s_pq%sresults%s.mat', prms.experiment.name, testSetStr, prms.experiment.pq_tag, prms.experiment.classif_tag));
 
 % --------------------------------
 % Compute Chunks (for all splits)
@@ -55,7 +56,7 @@ else
 end
 
 % --------------------------------
-% Compute PQ Codes
+% Compute PQ Codes (for test set)
 % --------------------------------
 
 pqencoder = featpipem.pq.PQEncoder(pqcodebook);
@@ -64,7 +65,7 @@ if exist(kPQCodesFile,'file')
     load(kPQCodesFile);
 else
     pqcodes = containers.Map();
-    for setName = keys(chunk_files)
+    for setName = prms.splits.test
         fprintf('Computing PQ codes for set %s...\n',setName{1});
         maxidx = 0;
         chunk_files_set = chunk_files(setName{1});
@@ -84,7 +85,7 @@ else
             
             % now compute the pq codes for the current chunk
             chunk_offset = ch.index(1)-1; % compute offset in current chunk
-            for codeidx = ch.index
+            parfor codeidx = ch.index
                 fprintf('Computing PQ code %d...\n',codeidx);
                 pqcodes_set(:, codeidx) = pqencoder.encode(ch.chunk(:, codeidx-chunk_offset));
             end
@@ -105,6 +106,34 @@ else
     save(kPQCodesFile, 'pqcodes');
 end
 
+% TEMPORARY CODE
+% ch = load(train_chunks{1}{1});
+% PQFullCodes = zeros(size(ch.chunk,1),size(pqcodes('test'),2));
+% OrigFullCodes = zeros(size(ch.chunk,1),size(pqcodes('test'),2));
+% clear ch;
+% 
+% for setName = prms.splits.test
+%     fprintf('Computing FULL PQ codes for set %s...\n',setName{1});
+%     pqcodes_set = pqcodes(setName{1})
+%     chunk_files_set = chunk_files(setName{1});
+%     for ci = 1:length(chunk_files_set)        
+%         ch = load(chunk_files_set{ci});
+%         
+%         OrigFullCodes(:,ch.index) = ch.chunk;
+%         
+%         for codeidx = ch.index
+%             startidx = 1;
+%             idxinc = size(pqcodebook{1},1);
+%             endidx = idxinc;
+%             for qi = 1:length(pqcodebook) % iterate through subquantizers
+%                 PQFullCodes(startidx:endidx,ch.index) = pqcodebook{qi}(:,pqcodes_set(qi,ch.index));
+%                 startidx = startidx + idxinc;
+%                 endidx = endidx + idxinc;
+%             end
+%         end
+%     end
+% end
+
 % % --------------------------------
 % % Compute PQ Index
 % % --------------------------------
@@ -121,46 +150,35 @@ end
 %     save(kPQInvIdxFile, 'pqindexer');
 % end
 
-% % --------------------------------
-% % Compute Kernel (if using a dual classifier)
-% % --------------------------------
-% if isa(classifier, 'featpipem.classification.svm.LibSvmDual')
-%     if exist(kKernelFile,'file')
-%         load(kKernelFile);
-%     else
-%         kernelSize = 0;
-%         kIdxStart = zeros(length(prms.splits.train),1);
-%         kIdxStart(1) = 1;
-%         kIdxLen = zeros(length(prms.splits.train),1);
-%         for si = 1:length(prms.splits.train)
-%             add_dim = size(pqcodes(prms.splits.train{i}),2);
-%             kernelSize = kernelSize + add_dim;
-%             kIdxLen(si) = add_dim;
-%             if si < length(prms.splits.train)
-%                 kIdxStart(si+1) = kIdxStart(si) + add_dim;
-%             end
-%         end
-%         
-%         K = zeros(kernelSize);
-%         
-%         for si = 1:length(prms.splits.train)
-%             for sj = 1:length(prms.splits.train)
-%                 K(kIdxStart(si):kIdxLen(si),kIdxStart(sj):kIdxLen(sj)) = ...
-%                     pqcodes(prms.splits.train{si}).*...
-%                     pqcodes(prms.splits.train{sj})';
-%             end
-%         end
-% 
-%         % save kernel matrix to file
-%         save(kKernelFile, 'K');
-%     end
-% end
-
 % --------------------------------
-% Train Classifier
+% Compute Kernel (if using a dual classifier)
 % --------------------------------
 if isa(classifier, 'featpipem.classification.svm.LibSvmDual')
-    error('No current support for dual');
+    if exist(kKernelFile,'file')
+        load(kKernelFile);
+    else
+        K = featpipem.chunkio.compKernel(train_chunks);
+        % save kernel matrix to file
+        save(kKernelFile, 'K');
+    end
+end
+
+% --------------------------------
+% Train Classifier (using original full codes)
+% --------------------------------
+if isa(classifier, 'featpipem.classification.svm.LibSvmDual')
+    % ...........................
+    % training for svm in dual
+    % ...........................
+    if exist(kClassifierFile,'file')
+        load(kClassifierFile);
+        classifier.set_model(model); %#ok<NODEF>
+    else
+        labels_train = featpipem.utility.getImdbGT(prms.imdb, prms.splits.train, 'concatOutput', true);
+        classifier.train(K, labels_train, train_chunks);
+        model = classifier.get_model(); %#ok<NASGU>
+        save(kClassifierFile,'model');
+    end
 else
     % ...........................
     % training for svm in primal
@@ -170,20 +188,7 @@ else
         classifier.set_model(model); %#ok<NODEF>
     else
         labels_train = featpipem.utility.getImdbGT(prms.imdb, prms.splits.train, 'concatOutput', true);
-
-        trainvecs_count = 0;
-        for si = 1:length(prms.splits.train)
-            trainvecs_count = trainvecs_count + size(pqcodes(prms.splits.train{si}),2);
-            trainvecs_dim = size(pqcodes(prms.splits.train{si}),1);
-        end
-        trainvecs = cast(zeros(trainvecs_dim, trainvecs_count), pqencoder.get_output_class());
-        startidx = 1;
-        for si = 1:length(prms.splits.train)
-            endidx = startidx + size(pqcodes(prms.splits.train{si}),2) - 1;
-            trainvecs(:,startidx:endidx) = pqcodes(prms.splits.train{si});
-            startidx = startidx + size(pqcodes(prms.splits.train{si}),2);
-        end
-
+        trainvecs = featpipem.chunkio.loadChunksIntoMat(train_chunks);
         classifier.train(trainvecs, labels_train);
         model = classifier.get_model(); %#ok<NASGU>
         save(kClassifierFile,'model');
@@ -196,9 +201,75 @@ end
 % --------------------------------
 scoremat = cell(1,length(prms.splits.test));
 res = cell(1,length(prms.splits.test));
+
+fprintf('Retrieving w matrix...\n');
+
+% Get SVM W Matrix
+wmat = classifier.getWMat();
+num_classes = size(wmat,2);
+
+% precompute w{j}.c{jt} LUT of dimension # subquants x subquant clusters
+fprintf('Precomputing w{j}.c{jt} lookup table...\n');
+wcLUT = cell(1, num_classes); %wcLUT is a cell with #classes elements
+
+for ci = 1:num_classes % iterate through classes
+    startidx = 1;
+    idxinc = size(pqcodebook{1},1);
+    endidx = idxinc;
+    wcLUT{ci} = zeros(length(pqcodebook), size(pqcodebook{1},2));
+    for qi = 1:length(pqcodebook) % iterate through subquantizers
+        if size(pqcodebook{qi},1) ~= idxinc, error('subquantizers have different dimensions'); end
+        for wi = 1:size(pqcodebook{qi},2) % iterate through subquantizer clusters
+            wcLUT{ci}(qi, wi) = wmat(startidx:endidx,ci)'*pqcodebook{qi}(:,wi);
+        end
+        startidx = startidx + idxinc;
+        endidx = endidx + idxinc;
+    end
+    % add bias term to all elements - this is incorrect!
+    %wcLUT{ci} = wcLUT{ci} + wmat(end,ci);
+end
+
+
 % apply classifier to all testsets in prms.splits.test
+
+fprintf('Applying classifier...\n');
+
+biasterm = wmat(end, :);
+
 for si = 1:length(prms.splits.test)
-    [scoremat{si}, scoremat{si}] = classifier.test(pqcodes(prms.splits.test{si}));
+    scoremat_pf = zeros(num_classes, size(pqcodes(prms.splits.test{si}),2));
+    pqcodes_set = pqcodes(prms.splits.test{si});
+    
+    %for fi = 1:size(pqcodes_set,2) % iterate through test features
+    parfor fi = 1:size(pqcodes_set,2) % iterate through test features
+        for ci = 1:num_classes % iterate through classes
+            feat_score = 0;
+            for qi = 1:size(pqcodes_set,1) % iterate through subquantizers
+               feat_score = feat_score + wcLUT{ci}(qi, pqcodes_set(qi, fi)); %#ok<PFBNS>
+            end
+            
+            scoremat_pf(ci, fi) = feat_score + biasterm(ci); %#ok<PFBNS>
+            
+%             % TEMP CODE 2 - DON'T USE LUT
+%             
+%             % reconstruct code
+%             fprintf('reconstructing code %d...\n',fi);
+%             reconcode = zeros(size(pqcodes_set,1)*size(pqcodebook{1},1),1);
+%             startidx = 1;
+%             incidx = size(pqcodebook{1},1);
+%             endidx = incidx;
+%             for qi = 1:length(pqcodebook) % iterate through subquantizers
+%                 reconcode(startidx:endidx) = pqcodebook{qi}(:,pqcodes_set(qi,fi));
+%                 startidx = startidx + incidx;
+%                 endidx = endidx + incidx;
+%             end
+%             
+%             scoremat_pf(ci, fi) = wmat(1:(end-1), ci)'*reconcode + wmat(end, ci);
+        end
+    end
+    
+    scoremat{si} = scoremat_pf;
+    
     switch prms.experiment.evalusing
         case 'precrec'
             res{si} = featpipem.eval.evalPrecRec(prms.imdb, scoremat{si}, prms.splits.test{si}, prms.experiment.dataset);

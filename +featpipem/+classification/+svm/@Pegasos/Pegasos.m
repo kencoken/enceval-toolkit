@@ -1,4 +1,4 @@
-classdef Pegasos < handle & featpipem.classification.svm.GenericSvm
+classdef Pegasos < handle & featpipem.classification.svm.LinearSvm
     %PEGASOS Train an SVM classifier using PEGASOS from vl_feat
     
     properties
@@ -22,6 +22,7 @@ classdef Pegasos < handle & featpipem.classification.svm.GenericSvm
         end
         train(obj, input, labels)
         [est_label, scoremat] = test(obj, input)
+        WMat = getWMat(obj)
         
     end
     

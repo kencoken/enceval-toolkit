@@ -7,7 +7,7 @@ classdef SPMPooler < handle & featpipem.pooling.GenericPooler
         pool_type    % 'sum' or 'max'
         quad_divs
         horiz_divs
-        kermap  % 'homker' (or other value = none [default])
+        kermap  % 'homker', 'hellinger' (or other value = none [default])
     end
     
     properties(SetAccess=protected)

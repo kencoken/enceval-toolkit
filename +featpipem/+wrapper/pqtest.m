@@ -212,11 +212,12 @@ num_classes = size(wmat,2);
 fprintf('Precomputing w{j}.c{jt} lookup table...\n');
 wcLUT = cell(1, num_classes); %wcLUT is a cell with #classes elements
 
+tLUTCompTime = tic;
 for ci = 1:num_classes % iterate through classes
     startidx = 1;
     idxinc = size(pqcodebook{1},1);
     endidx = idxinc;
-    wcLUT{ci} = zeros(length(pqcodebook), size(pqcodebook{1},2));
+    wcLUT{ci} = single(zeros(length(pqcodebook), size(pqcodebook{1},2)));
     for qi = 1:length(pqcodebook) % iterate through subquantizers
         if size(pqcodebook{qi},1) ~= idxinc, error('subquantizers have different dimensions'); end
         for wi = 1:size(pqcodebook{qi},2) % iterate through subquantizer clusters
@@ -228,46 +229,38 @@ for ci = 1:num_classes % iterate through classes
     % add bias term to all elements - this is incorrect!
     %wcLUT{ci} = wcLUT{ci} + wmat(end,ci);
 end
+fprintf('Time to compute LUT: %f seconds\n', toc(tLUTCompTime));
 
 
 % apply classifier to all testsets in prms.splits.test
 
 fprintf('Applying classifier...\n');
 
-biasterm = wmat(end, :);
+biasterm = single(wmat(end, :));
+
+rankingTime = 0;
 
 for si = 1:length(prms.splits.test)
-    scoremat_pf = zeros(num_classes, size(pqcodes(prms.splits.test{si}),2));
+    scoremat_pf = single(zeros(num_classes, size(pqcodes(prms.splits.test{si}),2)));
     pqcodes_set = pqcodes(prms.splits.test{si});
     
-    %for fi = 1:size(pqcodes_set,2) % iterate through test features
-    parfor fi = 1:size(pqcodes_set,2) % iterate through test features
-        for ci = 1:num_classes % iterate through classes
-            feat_score = 0;
-            for qi = 1:size(pqcodes_set,1) % iterate through subquantizers
-               feat_score = feat_score + wcLUT{ci}(qi, pqcodes_set(qi, fi)); %#ok<PFBNS>
-            end
-            
-            scoremat_pf(ci, fi) = feat_score + biasterm(ci); %#ok<PFBNS>
-            
-%             % TEMP CODE 2 - DON'T USE LUT
-%             
-%             % reconstruct code
-%             fprintf('reconstructing code %d...\n',fi);
-%             reconcode = zeros(size(pqcodes_set,1)*size(pqcodebook{1},1),1);
-%             startidx = 1;
-%             incidx = size(pqcodebook{1},1);
-%             endidx = incidx;
-%             for qi = 1:length(pqcodebook) % iterate through subquantizers
-%                 reconcode(startidx:endidx) = pqcodebook{qi}(:,pqcodes_set(qi,fi));
-%                 startidx = startidx + incidx;
-%                 endidx = endidx + incidx;
+    tRankingTime = tic;
+    
+%     %for fi = 1:size(pqcodes_set,2) % iterate through test features
+%     parfor fi = 1:size(pqcodes_set,2) % iterate through test features
+%         for ci = 1:num_classes % iterate through classes
+%             feat_score = single(0);
+%             for qi = 1:size(pqcodes_set,1) % iterate through subquantizers
+%                feat_score = feat_score + wcLUT{ci}(qi, pqcodes_set(qi, fi)); %#ok<PFBNS>
 %             end
 %             
-%             scoremat_pf(ci, fi) = wmat(1:(end-1), ci)'*reconcode + wmat(end, ci);
-        end
-    end
-    
+%             scoremat_pf(ci, fi) = feat_score + biasterm(ci); %#ok<PFBNS>
+%         end
+%     end
+
+    scoremat_pf = featpipem.pq.calcScoremat(wcLUT, biasterm, pqcodes_set);
+     
+    rankingTime = rankingTime + toc(tRankingTime);
     scoremat{si} = scoremat_pf;
     
     switch prms.experiment.evalusing
@@ -279,6 +272,8 @@ for si = 1:length(prms.splits.test)
             error('Unknown evaluation method %s', prms.experiment.evalusing);
     end
 end
+
+fprintf('Ranking time was: %f seconds\n',rankingTime);
 
 % package results
 results.res = res;

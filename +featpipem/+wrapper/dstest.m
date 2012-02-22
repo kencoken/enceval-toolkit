@@ -94,8 +94,11 @@ end
 scoremat = cell(1,length(prms.splits.test));
 res = cell(1,length(prms.splits.test));
 % apply classifier to all testsets in prms.splits.test
+rankingTime = 0;
 for si = 1:length(prms.splits.test)
+    tRankingTime = tic;
     [scoremat{si}, scoremat{si}] = featpipem.chunkio.testChunks(chunk_files(prms.splits.test{si}), classifier);
+    rankingTime = rankingTime + toc(tRankingTime);
     switch prms.experiment.evalusing
         case 'precrec'
             res{si} = featpipem.eval.evalPrecRec(prms.imdb, scoremat{si}, prms.splits.test{si}, prms.experiment.dataset);
@@ -105,6 +108,7 @@ for si = 1:length(prms.splits.test)
             error('Unknown evaluation method %s', prms.experiment.evalusing);
     end
 end
+fprintf('Ranking time was: %f seconds\n',rankingTime);
 
 % package results
 results.res = res;

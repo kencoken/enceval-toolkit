@@ -138,5 +138,8 @@ function pcode = compute(obj, imsize, feats, frames)
     if strcmp(obj.kermap,'homker')
         pcode = vl_homkermap(pcode, 1, 'kchi2');
     end
+    if strcmp(obj.kermap,'hellinger')
+        pcode = sqrt(pcode);
+    end
 end
 

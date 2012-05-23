@@ -241,11 +241,10 @@ biasterm = single(wmat(end, :));
 rankingTime = 0;
 
 for si = 1:length(prms.splits.test)
-    scoremat_pf = single(zeros(num_classes, size(pqcodes(prms.splits.test{si}),2)));
     pqcodes_set = pqcodes(prms.splits.test{si});
     
     tRankingTime = tic;
-    
+%    scoremat_pf = single(zeros(num_classes, size(pqcodes(prms.splits.test{si}),2)));
 %     %for fi = 1:size(pqcodes_set,2) % iterate through test features
 %     parfor fi = 1:size(pqcodes_set,2) % iterate through test features
 %         for ci = 1:num_classes % iterate through classes

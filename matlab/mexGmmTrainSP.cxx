@@ -132,7 +132,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }
     
     // prepare output struct
-    const char *keys[] = { "mean", "vnariance", "coef", "n_gauss", "n_dim", "log_likelihood" };
+    const char *keys[] = { "mean", "variance", "coef", "n_gauss", "n_dim", "log_likelihood" };
     plhs[0] = mxCreateStructMatrix(1, 1, 6,  keys);
     
     // call gmm library

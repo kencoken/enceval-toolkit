@@ -69,6 +69,10 @@ public:
   int load( const char* filename );
   int save( const char* filename );
   void print( bool _coef=true, bool _mean=false, bool _var=false );
+  
+  inline T* get_mean( int idx ) { return mean[idx]; }
+  inline T* get_variance( int idx ) { return var[idx]; }
+  inline T get_mixing_coefficients( int idx ) { return coef[idx]; }
 
 protected:
 

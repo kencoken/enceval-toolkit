@@ -19,13 +19,13 @@
 template<class T> class fisher_handle: public fisher<T>
 {
 public:
-    fisher_handle(gmm_builder<T> &gmm, fisher_param params): fisher<T>(params) { signature = CLASS_HANDLE_SIGNATURE; gmmproc = &gmm; }
+    fisher_handle(gaussian_mixture<T> &gmm, fisher_param params): fisher<T>(params) { signature = CLASS_HANDLE_SIGNATURE; gmmproc = &gmm; }
     ~fisher_handle() { signature = 0; }
     bool isValid() { return (signature == CLASS_HANDLE_SIGNATURE); }
-    gmm_builder<T>* getGmmPtr() { return gmmproc; }
+    gaussian_mixture<T>* getGmmPtr() { return gmmproc; }
 private:
     uint32_t signature;
-    gmm_builder<T> *gmmproc;
+    gaussian_mixture<T> *gmmproc;
 };
 
 template<class T> inline mxArray *convertPtr2Mat(fisher_handle<T> *ptr)

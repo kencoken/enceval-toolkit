@@ -77,8 +77,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
         }
         std::vector<float> coef(coef_arr, coef_arr + n_gauss);
         // prepare a GMM model with data from the structure
-        gmm_builder<float> *gmmproc = new gmm_builder<float>(n_gauss,n_dim);
-        gmmproc->set_model(mean, variance, coef);
+        gaussian_mixture<float> *gmmproc = new gaussian_mixture<float>(n_gauss,n_dim);
+        gmmproc->set(mean, variance, coef);
         
         // construct a c++ struct with default parameter values
         fisher_param fisher_encoder_params;
@@ -188,7 +188,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
         // get encoder from handle
         fisher_handle<float> *fisher_encoder =
                 convertMat2Ptr<float>(prhs[1]);
-        gmm_builder<float>* gmmproc = fisher_encoder->getGmmPtr();
+        gaussian_mixture<float>* gmmproc = fisher_encoder->getGmmPtr();
         if (gmmproc)
             delete gmmproc;
         delete fisher_encoder;

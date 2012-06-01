@@ -2,7 +2,7 @@
 /*
  * mexGmmTrainSP.cxx
  *
- * gmm = mexGmmTrainSP(n_gauss,n_dim,samples,gmm_builder_param,init_mean,init_var,init_coef)
+ * gmm = mexGmmTrainSP(n_gauss,n_dim,samples,em_param,init_mean,init_var,init_coef)
  *
  * Author: Ken Chatfield
  * July 2011
@@ -32,7 +32,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
             (nrhs >= 6 && !mxIsClass(prhs[5], "single")) ||
             (nrhs >= 7 && !mxIsClass(prhs[6], "single")) ||
             (nrhs > 5 && nrhs < 7))
-        mexErrMsgTxt("Function called as : gmm = mexGmmTrainSP(n_gauss,n_dim,samples,gmm_builder_param,init_mean,init_var,init_coef)");
+        mexErrMsgTxt("Function called as : gmm = mexGmmTrainSP(n_gauss,n_dim,samples,em_param,init_mean,init_var,init_coef)");
     
     // load in data
     int n_gauss = (int)mxGetScalar(prhs[0]);
@@ -48,7 +48,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }
     
     // construct a c++ struct with default parameter values
-    gmm_builder_param gmm_params;
+    em_param gmm_params;
     
     // load in optional parameter struct if specified
     if (nrhs >= 4) {
@@ -64,21 +64,17 @@ void mexFunction( int nlhs, mxArray *plhs[],
         // for each field that exists in the input matlab struct, replace the default
         // value in the c++ struct with its value
         mxArray *tmp;
-        if (fnames.count("max_iter") > 0) {
+	if (fnames.count("max_iter") > 0) {
             tmp = mxGetField(prhs[3],0,"max_iter");
             gmm_params.max_iter = (int)mxGetScalar(tmp);
         }
-        if (fnames.count("min_count") > 0) {
-            tmp = mxGetField(prhs[3],0,"min_count");
-            gmm_params.min_count = (int)mxGetScalar(tmp);
+        if (fnames.count("alpha") > 0) {
+            tmp = mxGetField(prhs[3],0,"alpha");
+            gmm_params.alpha = (float)mxGetScalar(tmp);
         }
         if (fnames.count("llh_diff_thr") > 0) {
             tmp = mxGetField(prhs[3],0,"llh_diff_thr");
             gmm_params.llh_diff_thr = (float)mxGetScalar(tmp);
-        }
-        if (fnames.count("grow_factor") > 0) {
-            tmp = mxGetField(prhs[3],0,"grow_factor");
-            gmm_params.grow_factor = (float)mxGetScalar(tmp);
         }
         if (fnames.count("min_gamma") > 0) {
             tmp = mxGetField(prhs[3],0,"min_gamma");
@@ -136,20 +132,18 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }
     
     // prepare output struct
-    const char *keys[] = { "mean", "variance", "coef", "n_gauss", "n_dim", "log_likelihood" };
+    const char *keys[] = { "mean", "vnariance", "coef", "n_gauss", "n_dim", "log_likelihood" };
     plhs[0] = mxCreateStructMatrix(1, 1, 6,  keys);
     
     // call gmm library
     
     mexPrintf("Initialising GMM Builder...");
-    gmm_builder<float> gmmproc(gmm_params, n_gauss, n_dim);
+    gaussian_mixture<float> gmmproc(gmm_params, n_gauss, n_dim);
     mexPrintf("DONE\n");
     
     mexPrintf("Setting up Model...");
     if (nrhs >= 5) {
-        gmmproc.set_model(init_mean, init_var, init_coef);
-    } else {
-        gmmproc.random_init(samples, time(NULL));
+        gmmproc.set(init_mean, init_var, init_coef);
     }
     mexPrintf("DONE\n");
     
@@ -168,8 +162,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mxArray *variance_mat = mxCreateNumericArray(2, meanvar_dims, mxSINGLE_CLASS, mxREAL);
     float* variance = (float*)mxGetData(variance_mat);
     for (int j = 0; j < n_gauss; ++j) {
-        float* componentmean = gmmproc.mean(j);
-        float* componentvariance = gmmproc.variance(j);
+        float* componentmean = gmmproc.get_mean(j);
+        float* componentvariance = gmmproc.get_variance(j);
         for (int i = 0; i < n_dim; ++i) {
             mean[i+j*n_dim] = componentmean[i];
             variance[i+j*n_dim] = componentvariance[i];
@@ -187,7 +181,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mxArray *coef_mat = mxCreateNumericArray(2, coef_dims, mxSINGLE_CLASS, mxREAL);
     float* coef = (float*)mxGetData(coef_mat);
     for (int i = 0; i < n_gauss; ++i) {
-        coef[i] = gmmproc.coef(i);
+        coef[i] = gmmproc.get_mixing_coefficients(i);
     }
     mxSetField(plhs[0], 0, "coef", coef_mat);
     

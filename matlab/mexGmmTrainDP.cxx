@@ -2,7 +2,7 @@
 /*
  * mexGmmTrainDP.cxx
  *
- * gmm = mexGmmTrainDP(n_gauss,n_dim,samples,gmm_builder_param,init_mean,init_var,init_coef)
+ * gmm = mexGmmTrainDP(n_gauss,n_dim,samples,em_param,init_mean,init_var,init_coef)
  *
  * Author: Ken Chatfield
  * July 2011
@@ -30,7 +30,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
             (nrhs >= 6 && !mxIsClass(prhs[5], "double")) ||
             (nrhs >= 7 && !mxIsClass(prhs[6], "double")) ||
             (nrhs > 5 && nrhs < 7))
-        mexErrMsgTxt("Function called as : gmm = mexGmmTrainDP(n_gauss,n_dim,samples,gmm_builder_param,init_mean,init_var,init_coef)");
+        mexErrMsgTxt("Function called as : gmm = mexGmmTrainDP(n_gauss,n_dim,samples,em_param,init_mean,init_var,init_coef)");
     
     // load in data
     int n_gauss = (int)mxGetScalar(prhs[0]);
@@ -46,7 +46,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }
     
     // construct a c++ struct with default parameter values
-    gmm_builder_param gmm_params;
+    em_param gmm_params;
     
     // load in optional parameter struct if specified
     if (nrhs >= 4) {
@@ -66,17 +66,13 @@ void mexFunction( int nlhs, mxArray *plhs[],
             tmp = mxGetField(prhs[3],0,"max_iter");
             gmm_params.max_iter = (int)mxGetScalar(tmp);
         }
-        if (fnames.count("min_count") > 0) {
-            tmp = mxGetField(prhs[3],0,"min_count");
-            gmm_params.min_count = (int)mxGetScalar(tmp);
+        if (fnames.count("alpha") > 0) {
+            tmp = mxGetField(prhs[3],0,"alpha");
+            gmm_params.alpha = (float)mxGetScalar(tmp);
         }
         if (fnames.count("llh_diff_thr") > 0) {
             tmp = mxGetField(prhs[3],0,"llh_diff_thr");
             gmm_params.llh_diff_thr = (float)mxGetScalar(tmp);
-        }
-        if (fnames.count("grow_factor") > 0) {
-            tmp = mxGetField(prhs[3],0,"grow_factor");
-            gmm_params.grow_factor = (float)mxGetScalar(tmp);
         }
         if (fnames.count("min_gamma") > 0) {
             tmp = mxGetField(prhs[3],0,"min_gamma");
@@ -140,14 +136,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
     // call gmm library
     
     mexPrintf("Initialising GMM Builder...");
-    gmm_builder<double> gmmproc(gmm_params, n_gauss, n_dim);
+    gaussian_mixture<double> gmmproc(gmm_params, n_gauss, n_dim);
     mexPrintf("DONE\n");
     
     mexPrintf("Setting up Model...");
     if (nrhs >= 5) {
-        gmmproc.set_model(init_mean, init_var, init_coef);
-    } else {
-        gmmproc.random_init(samples, time(NULL));
+        gmmproc.set(init_mean, init_var, init_coef);
     }
     mexPrintf("DONE\n");
     
@@ -166,8 +160,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mxArray *variance_mat = mxCreateDoubleMatrix(n_dim,n_gauss,mxREAL);
     double* variance = mxGetPr(variance_mat);
     for (int j = 0; j < n_gauss; ++j) {
-        double* componentmean = gmmproc.mean(j);
-        double* componentvariance = gmmproc.variance(j);
+        double* componentmean = gmmproc.get_mean(j);
+        double* componentvariance = gmmproc.get_variance(j);
         for (int i = 0; i < n_dim; ++i) {
             mean[i+j*n_dim] = componentmean[i];
             variance[i+j*n_dim] = componentvariance[i];
@@ -184,7 +178,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mxArray *coef_mat = mxCreateDoubleMatrix(n_gauss,1,mxREAL);
     double* coef = mxGetPr(coef_mat);
     for (int i = 0; i < n_gauss; ++i) {
-        coef[i] = gmmproc.coef(i);
+        coef[i] = gmmproc.get_mixing_coefficients(i);
     }
     mxSetField(plhs[0], 0, "coef", coef_mat);
     

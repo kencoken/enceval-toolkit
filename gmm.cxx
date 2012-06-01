@@ -1,7 +1,7 @@
 
 #include "gmm.h"
 
-/// \bief constructor
+/// \brief constructor
 ///
 /// \return none
 ///
@@ -9,22 +9,22 @@
 /// \date    August 2009
 
 template<class T>
-gmm_builder<T>::gmm_builder( const char* modelfile )
-  : gmm_mean(0), gmm_var(0), gmm_pi(0), gamma_t(0), i_var(0), var_thr(0), log_pi(0), log_var_sum(0), ngauss(0), ndim(0)
+gaussian_mixture<T>::gaussian_mixture( const char* modelfile )
+  : mean(0), var(0), coef(0), s0(0), s1(0), s2(0), i_var(0), var_floor(0), log_coef(0), log_var_sum(0), ngauss(0), ndim(0)
 {  
-  int err = this->load_model( modelfile );
+  int err = this->load( modelfile );
   assert( err==0 );
 }
 
 template<class T>
-gmm_builder<T>::gmm_builder( int n_gauss, int n_dim )
+gaussian_mixture<T>::gaussian_mixture( int n_gauss, int n_dim )
   : ngauss(n_gauss), ndim(n_dim)
 {
   init();
 }
 
 template<class T>
-gmm_builder<T>::gmm_builder( gmm_builder_param &p, int n_gauss, int n_dim )
+gaussian_mixture<T>::gaussian_mixture( em_param &p, int n_gauss, int n_dim )
   : param(p), ngauss(n_gauss), ndim(n_dim)
 {
   init();
@@ -32,38 +32,33 @@ gmm_builder<T>::gmm_builder( gmm_builder_param &p, int n_gauss, int n_dim )
 
 template<class T>
 void 
-gmm_builder<T>::init()
+gaussian_mixture<T>::init()
 {
   if( (ngauss==0) || (ndim==0) )
   {
-    gmm_mean=0;
-    gmm_var=0;
-    gmm_pi=0;
+    mean=0;
+    var=0;
+    coef=0;
 
-    gamma_t=0;
-    log_pi=0;
+    log_coef=0;
     log_var_sum=0;
     i_var=0;
 
-    var_thr = 0;
+    var_floor = 0;
   }
   else
   {
-    gmm_mean = new T*[ngauss];
+    mean = new T*[ngauss];
     for( int k=ngauss; k--; )
-      gmm_mean[k] = new T[ndim];
+      mean[k] = new T[ndim];
 
-    gmm_var = new T*[ngauss];
+    var = new T*[ngauss];
     for( int k=ngauss; k--; )
-      gmm_var[k] = new T[ndim];
+      var[k] = new T[ndim];
 
-    gmm_pi = new T[ngauss];
+    coef = new T[ngauss];
 
-    gamma_t = new T*[ngauss];
-    for( int k=ngauss; k--; )
-      gamma_t[k] = 0;
-
-    log_pi = new T[ngauss];
+    log_coef = new T[ngauss];
 
     log_var_sum = new double[ngauss];
 
@@ -76,20 +71,23 @@ gmm_builder<T>::init()
     {
       for( int i=ndim; i--; )
       {
-        gmm_mean[k][i] = 0.0;
-        gmm_var[k][i] = 1.0;
+        mean[k][i] = 0.0;
+        var[k][i] = (T)1.0;
       }
-      gmm_pi[k] = 1.0/T(ngauss);      
+      coef[k] = (T)1.0/(T)ngauss;
     }
 
     ndim_log_2pi = (T)(double(ndim)*log(2.0*M_PI));
 
-    var_thr = 0;
+    var_floor = 0;
   }
 
+  s0 = 0;
+  s1 = 0;
+  s2 = 0;
 }
 
-/// \bief destructor
+/// \brief destructor
 /// 
 /// \param none
 ///
@@ -99,55 +97,45 @@ gmm_builder<T>::init()
 /// \date    August 2009
 
 template<class T>
-gmm_builder<T>::~gmm_builder()
+gaussian_mixture<T>::~gaussian_mixture()
 {
   clean();
 }
 
 template<class T>
 void
-gmm_builder<T>::clean()
+gaussian_mixture<T>::clean()
 {
-  if( gmm_mean )
+
+  delete[] coef; 
+  coef=0;
+
+  delete[] log_coef; 
+  log_coef=0;
+
+  delete[] log_var_sum; 
+  log_var_sum=0;
+
+  delete[] var_floor; 
+  var_floor=0;
+
+  delete[] s0; 
+  s0=0;
+
+  if( mean )
   {
     for( int k=ngauss; k--; )
-      delete[] gmm_mean[k];
-    delete[] gmm_mean;
-    gmm_mean = 0;
+      delete[] mean[k];
+    delete[] mean;
+    mean = 0;
   }
 
-  if( gmm_var )
+  if( var )
   {
     for( int k=ngauss; k--; )
-      delete[] gmm_var[k];
-    delete[] gmm_var;
-    gmm_var = 0;
-  }
-
-  if( gmm_pi )
-  {
-    delete[] gmm_pi;
-    gmm_pi = 0;
-  }
-
-  if( gamma_t )
-  {
-    for( int k=ngauss; k--; )
-      if( gamma_t[k] ) delete[] gamma_t[k];
-    delete[] gamma_t;
-    gamma_t = 0;
-  }
-
-  if( log_pi )
-  {
-    delete[] log_pi;
-    log_pi = 0;
-  }
-
-  if( log_var_sum )
-  {
-    delete[] log_var_sum;
-    log_var_sum = 0;
+      delete[] var[k];
+    delete[] var;
+    var = 0;
   }
 
   if( i_var )
@@ -158,15 +146,32 @@ gmm_builder<T>::clean()
     i_var = 0;
   }
 
-  if( var_thr )
+
+  if( s1 )
   {
-    delete[] var_thr;
-    var_thr = 0;
+    for( int k=ngauss; k--; ) 
+    {
+      if( s1[k] )
+        delete[] s1[k];      
+    }    
+    delete[] s1;
+    s1=0;
   }
-  
+
+  if( s2 )
+  {
+    for( int k=ngauss; k--; ) 
+    {
+      if( s2[k] )
+        delete[] s2[k];      
+    }    
+    delete[] s2;
+    s2=0;
+  }
+
 }
 
-/// \bief set mean for the GMM 
+/// \brief set mean for the GMM 
 /// 
 /// \param mean new means (of the same dim)
 ///
@@ -177,19 +182,19 @@ gmm_builder<T>::clean()
 
 template<class T>
 void
-gmm_builder<T>::set_mean( std::vector<T*> &_mean )
+gaussian_mixture<T>::set_mean( std::vector<T*> &_mean )
 {
   assert( (int)_mean.size()==ngauss );
   for( int k=0; k<ngauss; k++ )
   {
     for( int i=0; i<ndim; i++ )  
     {
-      gmm_mean[k][i] = _mean[k][i];
+      mean[k][i] = _mean[k][i];
     }
   }
 }
 
-/// \bief set variance for the GMM 
+/// \brief set variance for the GMM 
 /// 
 /// \param var new variances (of the same dim)
 ///
@@ -200,25 +205,21 @@ gmm_builder<T>::set_mean( std::vector<T*> &_mean )
 
 template<class T>
 void
-gmm_builder<T>::set_variance( std::vector<T*> &var )
+gaussian_mixture<T>::set_variance( std::vector<T*> &_var )
 {
-  assert( (int)var.size()==ngauss );
+  assert( (int)_var.size()==ngauss );
 
   for( int k=ngauss; k--; )
   {
     for( int i=ndim; i--; )
     {
-      gmm_var[k][i] = std::max( (T)param.variance_floor, (T)var[k][i] );
-
-      // // if <floor, make it responsible for a large number of points
-      // if( var[k][i]<param.variance_floor )
-      //   gmm_var[k][i] = 1.0;
+      var[k][i] = std::max( (T)param.variance_floor, (T)_var[k][i] );
     }
   }
 
 }
 
-/// \bief set mixing coefficients for the GMM 
+/// \brief set mixing coefficients for the GMM 
 /// 
 /// \param coef new mixing coefficients (of the same dim)
 ///
@@ -229,7 +230,7 @@ gmm_builder<T>::set_variance( std::vector<T*> &var )
 
 template<class T>
 void
-gmm_builder<T>::set_mixing_coefficients( std::vector<T> &_coef )
+gaussian_mixture<T>::set_mixing_coefficients( std::vector<T> &_coef )
 {
   assert( (int)_coef.size()==ngauss );
   T sum=0.0;
@@ -237,10 +238,10 @@ gmm_builder<T>::set_mixing_coefficients( std::vector<T> &_coef )
     sum += _coef[k];
   assert(sum>0.0);
   for( int k=ngauss; k--; )
-    gmm_pi[k] = _coef[k]/sum;
+    coef[k] = _coef[k]/sum;
 }
 
-/// \bief set parameters for the GMM 
+/// \brief set parameters for the GMM 
 /// 
 /// \param mean new means
 /// \param var new variances
@@ -253,127 +254,23 @@ gmm_builder<T>::set_mixing_coefficients( std::vector<T> &_coef )
 
 template<class T>
 void
-gmm_builder<T>::set_model( std::vector<T*> &_mean,
-                           std::vector<T*> &_var,
-                           std::vector<T>  &_coef )
+gaussian_mixture<T>::set( std::vector<T*> &_mean, 
+                          std::vector<T*> &_var, 
+                          std::vector<T>  &_coef )
 {
   set_mean( _mean );
   set_variance( _var );
   set_mixing_coefficients( _coef );
-  prepare();
-}
 
-/// \bief random initialization of mean vectors
-/// 
-/// \param samples samples list
-///
-/// \return none
-///
-/// \author Jorge Sanchez
-/// \date    August 2009
+  // precompute constants
+  precompute_aux_var();
 
-template<class T>
-void
-gmm_builder<T>::random_init( std::vector<T*>& samples, int seed )
-{
-  int N=samples.size();
-  assert( N>0 );
-
-  T dmin[ndim], dmax[ndim];
-  for( int i=0; i<ndim; ++i )
-    dmin[i] = dmax[i] = samples[0][i];
-
-  for( int n=1; n<N; ++n )
-  {
-    for( int i=0; i<ndim; ++i )
-    {
-      if( samples[n][i]<dmin[i] )
-        dmin[i] = samples[n][i];
-      else if( samples[n][i]>dmax[i] )
-        dmax[i] = samples[n][i];
-    }
-  }
-  T m[ndim], v[ndim];
-  sample_mean( samples, m, ndim );
-  sample_variance( samples, m, v, ndim );
-  
-  srand( seed );
-
-  for( int k=ngauss; k--; )
-  {
-    for( int i=ndim; i--; )
-    {
-      T drange = dmax[i]-dmin[i];
-      gmm_mean[k][i] = dmin[i]+drange*T(rand())/T(RAND_MAX);
-      gmm_var[k][i] = std::max( (T)param.variance_floor, (T)0.1*drange*drange );
-    }
-    gmm_pi[k] = 1.0/T(ngauss);
-  }
-
-  prepare();
+  // reset accumulators
+  reset_stat_acc();
 
 }
 
-/// \bief EM-iteration
-/// 
-/// \param samples samples list
-///
-/// \return none
-///
-/// \author Jorge Sanchez
-/// \date    August 2009
-
-template<class T>
-void
-gmm_builder<T>::em( std::vector<T*> &samples )
-{
-  nsamples = samples.size();
-  assert( nsamples>0 );
-
-  em_min_pi = (T)param.min_count/(T)nsamples;
-
-  compute_variance_threshold(samples);
-
-  std::cout << " Number of Gaussians: " << ngauss << std::endl;
-  std::cout << " Number of samples: " << nsamples << std::endl;
-  std::cout << " Sample dimensions: " << ndim << std::endl;
-
-  T llh_init=0, llh_prev=0, llh_curr=0, llh_diff=0;
-
-  std::cout << " EM-iterations / average Log-Likelihood" << std::endl;  
-
-  for( int iter=0; iter<param.max_iter; ++iter )
-  {  
-
-    prepare();
-
-    e_step( samples );
-
-    if( iter==0 )
-    {
-      llh_init = log_likelihood( samples );
-      llh_curr = llh_init;
-      std::cout << "   (0) Log-Likelihood = " << llh_init << std::endl;  
-    }
-    else
-    {
-      llh_prev = llh_curr;
-      llh_curr = log_likelihood( samples );
-      llh_diff = (llh_curr-llh_prev)/(llh_curr-llh_init);
-
-      std::cout << "   (" << iter << ") Log-Likelihood = " << llh_curr << " (" << llh_diff << ")" << std::endl;
-
-      if( llh_diff<param.llh_diff_thr )
-        break;
-    }
-
-    m_step( samples );
-
-  }
-
-}
-
-/// \bief Adaptive variance floornig
+/// \brief Adaptive variance floornig
 /// 
 /// \param samples samples list
 ///
@@ -384,94 +281,281 @@ gmm_builder<T>::em( std::vector<T*> &samples )
 
 template<class T>
 void
-gmm_builder<T>::compute_variance_threshold( std::vector<T*> &x )
+gaussian_mixture<T>::compute_variance_floor( std::vector<T*> &x )
 {
-  if( var_thr )
-    delete[] var_thr;
-  var_thr = new T[ndim];
+  if( var_floor )
+    delete[] var_floor;
+  var_floor = new T[ndim];
 
   // variance of the sample set
-  sample_variance( x, var_thr, ndim );
-
-  // simd::scale( ndim, var_thr, 1.0/(T)(ngauss*ngauss) );
+  sample_variance( x, var_floor, ndim );
 
   for( int i=ndim; i--;  ) 
   {
-    // proportional to the sample variance
-    var_thr[i] = param.variance_floor_factor * var_thr[i];
+    // a small factor of the sample variance
+    var_floor[i] = param.variance_floor_factor * var_floor[i];
 
     // and floored
-    var_thr[i] = std::max( (T)var_thr[i], (T)param.variance_floor );
+    var_floor[i] = std::max( var_floor[i], (T)param.variance_floor );
   }
 }
 
-/// \bief E-step
+/// \brief EM iterations
 /// 
-/// \param samples samples list
+/// \param x samples
 ///
 /// \return none
 ///
 /// \author Jorge Sanchez
-/// \date    August 2009
+/// \date   Feb. 2012
 
 template<class T>
 void
-gmm_builder<T>::e_step( std::vector<T*> &samples )
+gaussian_mixture<T>::em( std::vector<T*> &samples )
 {
 
-  for( int k=ngauss; k--; )
-  {
-    if( gamma_t[k] ) 
-      delete[] gamma_t[k];
-    gamma_t[k] = new T[nsamples];
-  }
+  nsamples = (int)samples.size();
 
-#pragma omp parallel for
-  for( int n=0; n<nsamples; n++ )
-  {
-    T *gamma_t_n = new T[ngauss];
-    posterior( samples[n], gamma_t_n );
+  compute_variance_floor(samples);
 
-    for( int k=ngauss; k--; ) // transpose
-    { 
-      gamma_t[k][n] = gamma_t_n[k];
+  std::cout << "  Number of Gaussians: " << ngauss   << std::endl;
+  std::cout << "  Number of samples: "   << nsamples << std::endl;
+  std::cout << "  Sample dimensions: "   << ndim     << std::endl;
+  std::cout << std::endl;  
+
+  double llh_init=0, llh_prev=0, llh_curr=0, llh_diff=0;
+  for( int iter=0; iter<param.max_iter; ++iter )
+  {
+
+    // precompute constants
+    precompute_aux_var();
+
+    // reset accumulators
+    reset_stat_acc();
+
+    //  update sample statistics (E-step)
+    llh_curr=0.0;
+    for( int n=0; n<nsamples; ++n )
+    {
+      llh_curr += (double)accumulate_statistics( samples[n] );
     }
+    llh_curr /= double(nsamples);
 
-    delete[] gamma_t_n;
+    // check for convergence
+    if( iter==0 )
+    {
+      llh_init = llh_curr;
+      std::cout << "  iter 0, avg. llh = " << llh_init << std::endl;  
+    }
+    else
+    {
+      llh_diff = (llh_curr-llh_prev)/(llh_curr-llh_init);     
+      std::cout << "  iter " << std::noshowpos << iter << ", avg. llh = " << llh_curr << " (" << std::showpos << llh_diff << ")" << std::endl;      
+      if( llh_diff<(double)param.llh_diff_thr )
+        break;
+    }
+    llh_prev = llh_curr;
+
+    // update model parameters (M-step)
+    update_model();
   }
 }
 
-/// \brief Posterior of a sample (responsibilities)
+/// \brief Clean accumulators
+/// 
+/// \param none
+///
+/// \return none
+///
+/// \author Jorge Sanchez
+/// \date   Feb. 2012
+
+template<class T>
+void
+gaussian_mixture<T>::reset_stat_acc()
+{
+
+  if( s0 )
+    delete[] s0;
+  s0 = new T[ngauss];
+  memset( s0, 0, ngauss*sizeof(T));
+
+  if( s1 )
+  {
+    for( int k=ngauss; k--; ) 
+    {
+      if( s1[k] )
+        delete[] s1[k];      
+    }    
+    delete[] s1;
+  }
+  s1 = new T*[ngauss];
+  for( int k=ngauss; k--; ) 
+  {
+    s1[k] = new T[ndim];
+    memset( s1[k], 0, ndim*sizeof(T));
+  }
+
+  if( s2 )
+  {
+    for( int k=ngauss; k--; ) 
+    {
+      if( s2[k] )
+        delete[] s2[k];      
+    }    
+    delete[] s2;
+  }
+  s2 = new T*[ngauss];
+  for( int k=ngauss; k--; ) 
+  {
+    s2[k] = new T[ndim];
+    memset( s2[k], 0, ndim*sizeof(T));
+  }
+}
+
+/// \brief precompute auxiliary variables
+/// 
+/// \param none
+///
+/// \return none
+///
+/// \author Jorge Sanchez
+/// \date   Feb. 2012
+
+template<class T>
+void
+gaussian_mixture<T>::precompute_aux_var()
+{
+#pragma omp parallel for
+  for( int k=0; k<ngauss; k++ ) 
+  {
+    log_coef[k] = log( coef[k] );
+
+    log_var_sum[k] = 0.0;
+    for( int i=ndim; i--; ) 
+    {
+      i_var[k][i] = (T)1.0/var[k][i];
+      log_var_sum[k] += (double)log( var[k][i] );
+    }
+  }
+}
+
+/// \brief Accumulate statistics
 /// 
 /// \param x sample
-/// \param pst k-dimensional vector (output)
 ///
 /// \return none
 ///
 /// \author Jorge Sanchez
-/// \date    August 2010
+/// \date   Feb. 2012
+
+template<class T>
+T
+gaussian_mixture<T>::accumulate_statistics( T* x, bool _s0, bool _s1, bool _s2 )
+{
+  T *pst=new T[ngauss];
+  T llh = posterior( x, pst );
+
+  // s0
+  if( _s0 )
+  {
+    simd::add( ngauss, s0, pst ); 
+  }
+  if( _s1 )
+  {
+    // s1 and s2
+    if( _s2 )
+    {
+#pragma omp parallel for
+      for( int k=0; k<ngauss; ++k )
+      {
+        if( pst[k]<param.min_gamma )
+          continue;
+
+        simd::accumulate_stat( ndim, s1[k], s2[k], x, pst[k] );
+      }
+    }
+    // s1 only
+    else
+    {
+#pragma omp parallel for
+      for( int k=0; k<ngauss; ++k )
+      {
+        if( pst[k]<param.min_gamma )
+          continue;
+        
+        simd::add( ndim, s1[k], x, pst[k] );
+      }
+    }
+  }
+  // s2 only
+  else if( _s2 )
+  {
+#pragma omp parallel for
+    for( int k=0; k<ngauss; ++k )
+    {
+      if( pst[k]<param.min_gamma )
+        continue;
+        
+      simd::add2( ndim, s2[k], x, pst[k] );
+    }    
+  }
+  delete[] pst; pst=0;
+  return llh;
+}
+
+/// \brief Update model parameters
+/// 
+/// \param none
+///
+/// \return none
+///
+/// \author Jorge Sanchez
+/// \date   Feb. 2012
 
 template<class T>
 void
-gmm_builder<T>::posterior( T *x, T *pst )
+gaussian_mixture<T>::update_model()
 {
-
-  log_likelihood( x, pst );
-
-  T pst_sum=0.0;
-
-#pragma omp parallel for reduction(+:pst_sum)
+  // mean and variances  
+#pragma omp parallel for
   for( int k=0; k<ngauss; ++k )
   {
-    pst[k] = exp( pst[k] );
-    pst_sum += pst[k];
+    if( mean[k] )
+      delete[] mean[k];
+    mean[k] = s1[k];
+    s1[k] = 0;
+    simd::scale( ndim, mean[k], (T)1.0/s0[k] );
+    
+    if( var[k] )
+      delete[] var[k];
+    var[k] = s2[k];
+    s2[k] = 0;
+    simd::scale( ndim, var[k], (T)1.0/s0[k] );
+    simd::sub2( ndim, var[k], mean[k] );
+    for( int i=ndim; i--; )
+    {
+      var[k][i] = std::max( var[k][i], var_floor[i] );   
+    }
   }
+  s1=0;
+  s2=0;
 
-  if( pst_sum>0.0 )
+  // Dirichlet prior on the mxture weights
+  simd::offset( ngauss, s0, param.alpha*(T)nsamples );
+
+  // mixing coeficients
+  if( coef )
+    delete[] coef;
+  coef = s0;
+  s0 = 0;
+  T psum=0;
+#pragma omp parallel for reduction(+:psum)
+  for( int k=0; k<ngauss; ++k )
   {
-    simd::scale( ngauss, pst, (T)1.0/pst_sum );
+    psum += coef[k];
   }
-
+  simd::scale( ngauss, coef, (T)1.0/psum );  
 }
 
 /// \brief log-likelihood (and log-posterior) of a sample
@@ -502,7 +586,7 @@ gmm_builder<T>::posterior( T *x, T *pst )
 
 template<class T>
 T
-gmm_builder<T>::log_likelihood( T *x, T *log_pst )
+gaussian_mixture<T>::log_p( T *x, T *log_pst )
 {
 
   T *lp=0;
@@ -520,26 +604,24 @@ gmm_builder<T>::log_likelihood( T *x, T *log_pst )
   {
     lp[k] = log_gauss( k, x );
   }
-  simd::add( ngauss, lp, log_pi );
+  simd::add( ngauss, lp, log_coef );
 
-  T log_p_max = lp[0];
+  T lp_max = lp[0];
   for( int k=1; k<ngauss; ++k )
   {
-    if( lp[k] > log_p_max )
-    {
-      log_p_max = lp[k];
-    }
+    if( lp[k] > lp_max )
+      lp_max = lp[k];
   }
 
   T log_p_sum = 0.0;
 #pragma omp parallel for reduction(+:log_p_sum)
   for( int k=0; k<ngauss; ++k )
   {
-    log_p_sum += exp( lp[k]-log_p_max );
+    log_p_sum += (T)exp( lp[k]-lp_max );
   }
-  log_p_sum = log_p_max + log(log_p_sum);
+  log_p_sum = lp_max + log(log_p_sum);
 
-  if( log_pst )  // Compute Log-Posteriors
+  if( log_pst ) // Compute Log-Posteriors
   {
     simd::offset( ngauss, lp, -log_p_sum );
   }
@@ -549,10 +631,10 @@ gmm_builder<T>::log_likelihood( T *x, T *log_pst )
     lp = 0;
   }
   
-  return (T)log_p_sum;
+  return log_p_sum;
 }
 
-/// \bief Gaussian Log-probability
+/// \brief Gaussian Log-probability
 /// 
 /// \param k Gaussian component
 /// \param x sample
@@ -564,162 +646,69 @@ gmm_builder<T>::log_likelihood( T *x, T *log_pst )
 
 template<class T>
 T
-gmm_builder<T>::log_gauss( int k, T* x )
+gaussian_mixture<T>::log_gauss( int k, T* x )
 {
-  // T log_p = ndim_log_2pi + log_var_sum[k];
-  // for( int i=ndim; i--; )
-  // {
-  //   T xc = x[i]-gmm_mean[k][i];
-  //   log_p += xc*xc*i_var[k][i];
-  // }
-  // return -0.5*log_p;
-
-  double log_p = (double) ndim_log_2pi + log_var_sum[k];
-  log_p += (double)simd::weighted_l2_sq( ndim, x, gmm_mean[k], i_var[k] );
-  return (T)(-0.5*log_p);
-
+  T log_p = ndim_log_2pi + log_var_sum[k] 
+    + simd::weighted_l2_sq( ndim, x, mean[k], i_var[k] );
+  return -(T)0.5 * log_p;
 }
 
-
-/// \bief M-step (batch version, see PRML for an incremental version)
+/// \brief Posterior of a sample (responsibilities)
 /// 
-/// \param samples samples list
+/// \param x sample
+/// \param pst k-dimensional vector (output)
 ///
-/// \return none
+/// \return log-likelihood for the sample
 ///
 /// \author Jorge Sanchez
-/// \date    August 2009
+/// \date   August 2010
 
 template<class T>
-void
-gmm_builder<T>::m_step( std::vector<T*> &samples )
+T
+gaussian_mixture<T>::posterior( T *x, T *pst )
 {
+  T llh=log_p( x, pst );
 
-#pragma omp parallel for
-  for( int k=0; k<ngauss; k++ )
+  T pst_sum=0.0;
+#pragma omp parallel for reduction(+:pst_sum)
+  for( int k=0; k<ngauss; ++k )
   {
-
-    // if less than certain threshold do not update this Gaussian
-    if( gmm_pi[k]<=em_min_pi )
-      continue;
-
-    T *gamma_k = gamma_t[k];
-    T *mean_k = gmm_mean[k];
-    T *var_k = gmm_var[k];
-    
-    T i_Nk = 0.0;
-    int nused = 0;
-    for( int n=nsamples; n--; )
-    {
-      if( gamma_k[n]<param.min_gamma )
-        continue;
-      i_Nk += gamma_k[n];
-      nused++;
-    }
-
-    assert( i_Nk>0.0 );
-    i_Nk = 1.0/i_Nk;
-      
-    // update means
-    memset( mean_k, 0, ndim*sizeof(T) );
-    for( int n=nsamples; n--; )
-    {
-      if( gamma_k[n]<param.min_gamma )
-        continue;
-      simd::accumulate_stat( ndim, mean_k, samples[n], gamma_k[n]);
-    }
-    simd::scale( ndim, mean_k, i_Nk );
-
-    // update variance    
-    memset( var_k, 0, ndim*sizeof(T) );
-    for( int n=nsamples; n--; )
-    {
-      if( gamma_k[n]<param.min_gamma )
-        continue;     
-      simd::accumulate_stat_centered( ndim, var_k, samples[n], mean_k, gamma_k[n]);
-    }
-    simd::scale( ndim, var_k, i_Nk );
-
-    for( int i=ndim; i--; )
-    {
-      var_k[i] = std::max( var_k[i], var_thr[i] );
-    }
-
-    // update mixing coeficient
-    gmm_pi[k] = std::max( (T)1.0/(i_Nk*(T)nused), (T)em_min_pi );
+    pst[k] = exp( pst[k] );
+    pst_sum += pst[k];
   }
 
-  // enforce normalization
-  T pi_sum=0.0;
-  for( int k=ngauss; k--; )  
+  if( pst_sum>0.0 )
   {
-    pi_sum += gmm_pi[k];
-  }
-  assert( pi_sum>0.0 );
-  simd::scale( ngauss, gmm_pi, 1.0/pi_sum );
-  
-  for( int k=ngauss; k--; )  
-  {
-    assert(gmm_pi[k] > 0.0);
+    simd::scale( ngauss, pst, (T)1.0/pst_sum );
   }
 
+  return llh;
 }
 
-/// \bief Average Log-Likelihood.
+/// \brief sample log likelihoog
 /// 
-/// \param samples samples list
+/// \param sample list of samples
 ///
-/// \return average Log-Likelihood
+/// \return average log-likelihood
 ///
 /// \author Jorge Sanchez
 /// \date   August 2009
 
 template<class T>
 T
-gmm_builder<T>::log_likelihood( std::vector<T*> &samples )
+gaussian_mixture<T>::log_likelihood( std::vector<T*> &samples )
 {
-  nsamples = samples.size();
-  assert( nsamples>0 );
-
-  long double llh=0.0;
-  for( int i=0; i<nsamples; i++ ) 
+  T llh=0.0;
+  for( int n=0; n<(int)samples.size(); ++n )
   {
-    llh += (long double)log_likelihood( samples[i] );
+    llh += (double)log_p( samples[n] );
   }
-  return (T)(llh/(long double)nsamples);
+  llh /= double(samples.size());
+
+  return (T)llh;
 }
 
-
-/// \bief prepare auxiliary variables
-/// 
-/// \param none
-///
-/// \return none
-///
-/// \author Jorge Sanchez
-/// \date   August 2009
-
-template<class T>
-void
-gmm_builder<T>::prepare()
-{
-
-#pragma omp parallel for
-  for( int k=0; k<ngauss; k++ ) 
-  {
-    log_pi[k] = log( gmm_pi[k] );
-
-    log_var_sum[k] = 0.0;
-    for( int i=ndim; i--; ) 
-    {
-      i_var[k][i] = 1.0/gmm_var[k][i];
-      log_var_sum[k] += (double)log( gmm_var[k][i] );
-    }
-  }
-
-}
-
-/// \bief print model
+/// \brief print model
 /// 
 /// \param none
 ///
@@ -730,20 +719,20 @@ gmm_builder<T>::prepare()
 
 template<class T>
 void
-gmm_builder<T>::print( bool print_pi, bool print_mean, bool print_var )
+gaussian_mixture<T>::print( bool print_coef, bool print_mean, bool print_var )
 {
-  assert( print_pi || print_mean || print_var );
+  assert( print_coef || print_mean || print_var );
 
   for( int k=0; k<ngauss; ++k )
   {    
-    if( print_pi )
-      std::cout << " pi[" << k << "] = " << gmm_pi[k] << std::endl;
+    if( print_coef )
+      std::cout << " coef[" << k << "] = " << coef[k] << std::endl;
 
     if( print_mean )
     {
       std::cout << " mean[" << k << "] = [";
       for( int i=0; i<ndim; ++i )
-        std::cout << " " << gmm_mean[k][i];
+        std::cout << " " << mean[k][i];
       std::cout << " ]" << std::endl;
     }
 
@@ -751,13 +740,13 @@ gmm_builder<T>::print( bool print_pi, bool print_mean, bool print_var )
     {
       std::cout << " variance[" << k << "] = [";
       for( int i=0; i<ndim; ++i )
-        std::cout << " " << gmm_var[k][i];
+        std::cout << " " << var[k][i];
       std::cout << " ]" << std::endl;
     }
   }
 }
 
-/// \bief load model from file
+/// \brief load model from file
 /// 
 /// \param none
 ///
@@ -768,7 +757,7 @@ gmm_builder<T>::print( bool print_pi, bool print_mean, bool print_var )
 
 template<class T>
 int 
-gmm_builder<T>::load_model( const char* filename )
+gaussian_mixture<T>::load( const char* filename )
 {
   clean();
 
@@ -783,21 +772,25 @@ gmm_builder<T>::load_model( const char* filename )
   
   for( int k=0; k<ngauss; k++ )
   {
-    fin.read( (char*)&gmm_pi[k], sizeof(T) );
-    fin.read( (char*)&gmm_mean[k][0], ndim*sizeof(T) );
-    fin.read( (char*)&gmm_var[k][0], ndim*sizeof(T) );
+    fin.read( (char*)&coef[k], sizeof(T) );
+    fin.read( (char*)&mean[k][0], ndim*sizeof(T) );
+    fin.read( (char*)&var[k][0], ndim*sizeof(T) );
   }
 
   fin.close();
   if( fin.fail() )
     return -1;
 
-  prepare();
+  // precompute constants
+  precompute_aux_var();
+
+  // reset accumulators
+  reset_stat_acc();
 
   return 0;
 }
 
-/// \bief save model to file
+/// \brief save model to file
 /// 
 /// \param none
 ///
@@ -808,7 +801,7 @@ gmm_builder<T>::load_model( const char* filename )
 
 template<class T>
 int 
-gmm_builder<T>::save_model( const char* filename )
+gaussian_mixture<T>::save( const char* filename )
 {
   std::ofstream fout( filename, std::ios::out | std::ios::binary );
   if( fout.fail() )
@@ -819,9 +812,9 @@ gmm_builder<T>::save_model( const char* filename )
   
   for( int k=0; k<ngauss; k++ )
   {
-    fout.write( (char*)&gmm_pi[k], sizeof(T) );
-    fout.write( (char*)&gmm_mean[k][0], ndim*sizeof(T) );
-    fout.write( (char*)&gmm_var[k][0], ndim*sizeof(T) );
+    fout.write( (char*)&coef[k], sizeof(T) );
+    fout.write( (char*)&mean[k][0], ndim*sizeof(T) );
+    fout.write( (char*)&var[k][0], ndim*sizeof(T) );
   }
 
   fout.close();
@@ -831,8 +824,7 @@ gmm_builder<T>::save_model( const char* filename )
   return 0;
 }
 
-
-/// \bief print
+/// \brief print
 /// 
 /// \param none
 ///
@@ -842,51 +834,16 @@ gmm_builder<T>::save_model( const char* filename )
 /// \date    August 2009
 
 void
-gmm_builder_param::print()
+em_param::print()
 {
   std::cout << "  max_iter = " << max_iter << std::endl;
-  std::cout << "  min_count = " << min_count << std::endl;
+  std::cout << "  alpha = " << alpha << std::endl;
   std::cout << "  llh_diff_thr = " << llh_diff_thr << std::endl;
-  std::cout << "  grow_factor = " << grow_factor << std::endl;
   std::cout << "  min_gamma = " << min_gamma << std::endl;
   std::cout << "  variance_floor = " << variance_floor << std::endl;
   std::cout << "  variance_floor_factor = " << variance_floor_factor << std::endl;
 }
 
-
-// /// \brief    Read parameters
-// ///
-// /// \param    param_file parameters file
-// /// \param    category [category]
-// ///
-// /// \return   -1 in case of error
-// ///
-// /// \author   Jorge A. Sanchez
-// /// \date     23/07/2010
-
-// int 
-// gmm_builder_param::read( const char *param_file, const char *category )
-// {
-//   parameter_reader parm_file( param_file );
-//   int e=0;
-
-//   e += parm_file.get_value( max_iter, category, "max_iter" );
-//   e += parm_file.get_value( min_count, category, "min_count" );
-//   e += parm_file.get_value( llh_diff_thr, category, "llh_diff_thr" );
-//   e += parm_file.get_value( grow_factor, category, "grow_factor" );
-//   e += parm_file.get_value( min_gamma, category, "min_gamma" );
-//   e += parm_file.get_value( variance_floor, category, "variance_floor" );  
-//   e += parm_file.get_value( variance_floor_factor, category, "variance_floor_factor" );
-
-//   if(e)
-//   {
-//     std::cout << "error in \"" << category << "\" parameters" << std::endl;
-//     return -1;
-//   }
-//   return 0;
-// }
-
-
-template class gmm_builder<float>;
-template class gmm_builder<double>;
+template class gaussian_mixture<float>;
+template class gaussian_mixture<double>;
 

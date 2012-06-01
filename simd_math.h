@@ -50,6 +50,10 @@ public:
   static void add( int ndim, float *a, const float *b, const float c );
   static void add( int ndim, double *a, const double *b, const double c );
 
+  // a_i += c * b_i^2
+  static void add2( int ndim, float *a, const float *b, const float c );
+  static void add2( int ndim, double *a, const double *b, const double c );
+
   // a_i *= b_i
   static void mult( int ndim, float *a, const float *b );  
   static void mult( int ndim, double *a, const double *b );

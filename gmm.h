@@ -11,120 +11,105 @@
 #include <fstream>
 #include <ctime>
 #include <limits>
-#include <omp.h>
 
 #include "stat.h"
-
-//#include "../ciiiutils/parameter_reader.h"
 #include "simd_math.h"
 
-struct gmm_builder_param 
+struct em_param 
 {
-  gmm_builder_param(): 
+  em_param(): 
     max_iter(100), 
-    min_count(10),
-    llh_diff_thr(0.00001), 
-    grow_factor(0.1),
-    min_gamma(1e-12),
-    variance_floor(1.0e-9), 
+    alpha(100.0),
+    llh_diff_thr(0.001),
+    min_gamma(1e-4),
+    variance_floor(1.0e-9),
     variance_floor_factor(0.01) {}
   int max_iter;         // max. number of EM iterations
-  int min_count;        // min. count of samples to update a Gaussian
+  float alpha;          // Dirichlet prior on mixture weights: alpha_k=alpha (for all k)
   float llh_diff_thr;   // average Log-Likelihood difference threshold
   float grow_factor;    // growing factor for split
   float min_gamma;      // min. posterior prob. for a sample
   float variance_floor; // hard variance floor
   float variance_floor_factor; // factor for the adaptive flooring
-  int read( const char *param_file, const char *category = "gmm_builder" );
   void print();
 };
 
-/// \class    gmm_builder gmm.h "gmm.h"
+/// \class    gaussian_mixture gmm.h "gmm.h"
 ///  
-/// \brief    Gaussian (diagonal covariance) Mixture Model using EM-algorithm
+/// \brief    Gaussian (diagonal covariances) Mixture Model using EM-algorithm
 ///
 /// \author   Jorge Sanchez
 /// \date     29/07/2009
 
 template<class T>
-class gmm_builder 
+class gaussian_mixture 
 {
 public:
+  template<class TT> friend class fisher;
 
-  gmm_builder( const char* modelfile );
+  gaussian_mixture( const char* modelfile );
 
-  gmm_builder( int n_gauss, int n_dim );
+  gaussian_mixture( int n_gauss, int n_dim );
 
-  gmm_builder( gmm_builder_param &p, int n_gauss, int n_dim );
+  gaussian_mixture( em_param &p, int n_gauss, int n_dim );
 
-  ~gmm_builder();
+  ~gaussian_mixture();
 
-  void set_model( std::vector<T*> &mean, 
-                  std::vector<T*> &var,
-                  std::vector<T>  &coef );
+  void set( std::vector<T*> &_mean, std::vector<T*> &_var, std::vector<T>  &_coef );
 
-  void random_init( std::vector<T*> &samples, int seed=-1 );
-
-  void e_step( std::vector<T*> &samples );
-  void m_step( std::vector<T*> &samples );
   void em( std::vector<T*> &samples );
 
+  T posterior( T* sample, T *pst );
+
   T log_likelihood( std::vector<T*> &samples );
-
-  void posterior( T* sample, T *pst );
-
-  inline T* mean( int k ){ return gmm_mean[k]; }
-  inline T* variance( int k ){ return gmm_var[k]; }
-  inline T  coef( int k ){ return gmm_pi[k]; }
-
-  void print( bool pi=true, bool mean=false, bool var=false );
 
   int n_dim(){ return ndim; }
   int n_gauss(){ return ngauss; }
 
-  int load_model( const char* filename );
-  int save_model( const char* filename );
-
-  T min_gamma(){ return (T)param.min_gamma; }
-
-private:
-
-  void set_mean( std::vector<T*> &mean );
-  void set_variance( std::vector<T*> &var );
-  void set_mixing_coefficients( std::vector< T > &coef ); 
+  int load( const char* filename );
+  int save( const char* filename );
+  void print( bool _coef=true, bool _mean=false, bool _var=false );
 
 protected:
 
-  gmm_builder_param param;
+  void set_mean( std::vector<T*> &_mean );
+  void set_variance( std::vector<T*> &_var );
+  void set_mixing_coefficients( std::vector< T > &_coef ); 
+
+  T **mean, **var, *coef;
+
+  void reset_stat_acc();
+  T accumulate_statistics( T* sample, bool _s0=true, bool _s1=true, bool _s2=true );
+  T *s0, **s1, **s2;
+
+  em_param param;
 
   void init();
+
   void clean();
 
-  void prepare();
+  void compute_variance_floor( std::vector<T*> &x );
 
-  void compute_variance_threshold( std::vector<T*> &x );
+  void precompute_aux_var();
 
-  // mean, variance and mixing coefficients
-  T **gmm_mean, **gmm_var, *gmm_pi;
+  void update_model();
 
-  // Responsibilities (matrix of size (ngauss)x(nsamples) )
-  T **gamma_t;
+  T log_p( std::vector<T*> &samples );
 
-  T **i_var, *var_thr, *log_pi;
+  T **i_var, *var_floor, *log_coef;
 
   double *log_var_sum; // accumulate as double
 
   int ngauss, ndim, nsamples;
 
-  T em_min_pi;
-
   T ndim_log_2pi;
 
-  T log_likelihood( T* x, T *log_pst=0 );
+  T log_p( T* x, T *log_pst=0 );
 
   T log_gauss( int k, T* x );
 
-};
+private:
 
+};
 
 #endif

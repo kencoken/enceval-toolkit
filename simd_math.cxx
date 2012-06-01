@@ -388,6 +388,67 @@ void simd::add( int ndim, double *a, const double *b, const double c )
   };
 }
 
+/// \brief Inplace scale+squared sum: a_i += c * b_i^2
+///
+/// \param ndim dimensionality
+/// \param a sum
+/// \param b addend
+/// \param c constant
+///
+/// \return none
+///
+/// \author Jorge Sánchez
+/// \date Nov. 2010
+
+void simd::add2( int ndim, float *a, const float *b, const float c )
+{
+#if defined(__GNUC__) && defined(__SSE2__)
+  if( (sizeof(float)==4) && (ndim%4==0) )
+  {
+    float _c[4]; 
+    _c[0] = _c[1] = _c[2] = _c[3] = c;
+    v4sf cv = *(v4sf*)_c;
+    while( ndim >= 4 )
+    {
+      v4sf bv = *(v4sf*)b;
+      *(v4sf*)a = *(v4sf*)a + cv * bv * bv;
+      a += 4;
+      b += 4;
+      ndim -= 4;
+    };    
+  }
+#endif
+  while( ndim-- ) 
+  {
+    *(a++) += c * (*b) * (*b);
+    b++;
+  };
+}
+
+void simd::add2( int ndim, double *a, const double *b, const double c )
+{
+#if defined(__GNUC__) && defined(__SSE2__)
+  if( (sizeof(double)==8) && (ndim%2==0) )
+  {
+    double _c[2]; _c[0]=c; _c[1]=c;
+    v2df cv = *(v2df*)_c;
+    while( ndim >= 2 )
+    {
+      v2df bv = *(v2df*)b;
+      *(v2df*)a = *(v2df*)a + cv * bv * bv;
+      a += 2;
+      b += 2;
+      ndim -= 2;
+    };    
+  }
+#endif
+  while( ndim-- ) 
+  {
+    *(a++) += c * (*b) * (*b);
+    b++;
+  };
+}
+
 /// \brief Inplace term-by-term product: a_i *= b_i
 ///
 /// \param ndim dimensionality

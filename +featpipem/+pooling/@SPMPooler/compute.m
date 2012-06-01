@@ -34,7 +34,9 @@ function pcode = compute(obj, imsize, feats, frames)
             feats_sel = feats(:, (y_bin == sy_bin) & (x_bin == sx_bin));
             if ~isempty(feats_sel)
                 code = obj.encoder_.encode(feats_sel);
-                if nnz(isnan(code)), error('Code contains NaNs'); end
+                if nnz(isnan(code))
+                    error('Code contains NaNs');
+                end
                 pcode(:,(sx_bin-1)*obj.quad_divs+sy_bin) = code;
             else
                 warning('SPMPool:EmptyBin','empty bin!');

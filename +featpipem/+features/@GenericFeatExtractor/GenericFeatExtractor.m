@@ -4,6 +4,10 @@ classdef GenericFeatExtractor < handle
     properties
     end
     
+    properties(SetAccess = private)
+        outdim
+    end
+    
     methods(Abstract)
         [feats, frames] = compute(obj, im)
     end

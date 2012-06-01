@@ -21,7 +21,7 @@ classdef FKEncoder < handle & featpipem.encoding.GenericEncoder
     methods
         function obj = FKEncoder(codebook)
             % set default parameter values
-            obj.grad_weight = true;
+            obj.grad_weights = true;
             obj.grad_means = true;
             obj.grad_variances = true;
             obj.alpha = single(0.5);

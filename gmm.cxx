@@ -451,15 +451,39 @@ gaussian_mixture<T>::precompute_aux_var()
 
 template<class T>
 T
-gaussian_mixture<T>::accumulate_statistics( T* x, bool _s0, bool _s1, bool _s2 )
+gaussian_mixture<T>::accumulate_statistics( T* x, bool _s0, bool _s1, bool _s2,
+					    T* s0_ext, T** s1_ext, T** s2_ext )
 {
+  T* s0_active;
+  T** s1_active;
+  T** s2_active;
+
+  if (s0)
+  {
+    s0_active = s0_ext;
+  } else {
+    s0_active = s0;
+  }
+  if (s1)
+  {
+    s1_active = s1_ext;
+  } else {
+    s1_active = s1;
+  }
+  if (s2)
+  {
+    s2_active = s2_ext;
+  } else {
+    s2_active = s2;
+  }
+  
   T *pst=new T[ngauss];
   T llh = posterior( x, pst );
 
-  // s0
+  // s0_active
   if( _s0 )
   {
-    simd::add( ngauss, s0, pst ); 
+    simd::add( ngauss, s0_active, pst ); 
   }
   if( _s1 )
   {
@@ -472,7 +496,7 @@ gaussian_mixture<T>::accumulate_statistics( T* x, bool _s0, bool _s1, bool _s2 )
         if( pst[k]<param.min_gamma )
           continue;
 
-        simd::accumulate_stat( ndim, s1[k], s2[k], x, pst[k] );
+        simd::accumulate_stat( ndim, s1_active[k], s2_active[k], x, pst[k] );
       }
     }
     // s1 only
@@ -484,7 +508,7 @@ gaussian_mixture<T>::accumulate_statistics( T* x, bool _s0, bool _s1, bool _s2 )
         if( pst[k]<param.min_gamma )
           continue;
         
-        simd::add( ndim, s1[k], x, pst[k] );
+        simd::add( ndim, s1_active[k], x, pst[k] );
       }
     }
   }
@@ -497,7 +521,7 @@ gaussian_mixture<T>::accumulate_statistics( T* x, bool _s0, bool _s1, bool _s2 )
       if( pst[k]<param.min_gamma )
         continue;
         
-      simd::add2( ndim, s2[k], x, pst[k] );
+      simd::add2( ndim, s2_active[k], x, pst[k] );
     }    
   }
   delete[] pst; pst=0;

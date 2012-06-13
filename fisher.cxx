@@ -99,13 +99,38 @@ fisher<T>::compute( std::vector<T*> &x, std::vector<T> &wghx, T *fk )
   {
     wghsum += wghx[i];
   }
+
   assert( wghsum>0 );
 
   // accumulate statistics
-  gmm->reset_stat_acc();
+  /*gmm->reset_stat_acc();
   for( int i=0; i<nsamples; ++i ) 
   {
     gmm->accumulate_statistics( x[i], true, param.grad_means||param.grad_variances, param.grad_variances );
+  }*/
+  T *s0, **s1, **s2;
+  int ngauss = gmm->n_gauss();
+  int ndim = gmm->n_dim();
+  {
+    s0 = new T[ngauss];
+    memset( s0, 0, ngauss*sizeof(T));
+    s1 = new T*[ngauss];
+    for( int k=ngauss; k--; )
+    {
+      s1[k] = new T[ndim];
+      memset( s1[k], 0, ndim*sizeof(T));
+    }
+    s2 = new T*[ngauss];
+    for( int k=ngauss; k--; )
+    {
+      s2[k] = new T[ndim];
+      memset( s2[k], 0, ndim*sizeof(T));
+    }
+    for( int i=0; i<nsamples; ++i )
+    {
+      gmm->accumulate_statistics( x[i], true, param.grad_means||param.grad_variances, param.grad_variances,
+				  s0, s1, s2 );
+    }
   }
 
   T *p=fk;
@@ -116,7 +141,7 @@ fisher<T>::compute( std::vector<T*> &x, std::vector<T> &wghx, T *fk )
   {
     for( int j=ngauss; j--; ) 
     {        
-      p[j] = gmm->s0[j] / ( wghsum*(T)sqrtf((float)iwgh[j]) );
+      p[j] = s0[j] / ( wghsum*(T)sqrtf((float)iwgh[j]) );
     } 
     p += ngauss;
   }
@@ -127,7 +152,7 @@ fisher<T>::compute( std::vector<T*> &x, std::vector<T> &wghx, T *fk )
 #pragma omp parallel for
     for( int j=0; j<ngauss; j++ ) 
     {
-      T *s1_j = gmm->s1[j];
+      T *s1_j = s1[j];
       T *mean_j = gmm->mean[j];
       T *istd_j = istd+j*ndim;
       T *p_j = p+j*ndim;
@@ -135,7 +160,7 @@ fisher<T>::compute( std::vector<T*> &x, std::vector<T> &wghx, T *fk )
 
       for( int k=ndim; k--; ) 
       {
-        p_j[k] = mc * ( s1_j[k] - mean_j[k] * gmm->s0[j] ) * istd_j[k];
+        p_j[k] = mc * ( s1_j[k] - mean_j[k] * s0[j] ) * istd_j[k];
       }      
     }
     p += ngauss*ndim;     
@@ -148,8 +173,8 @@ fisher<T>::compute( std::vector<T*> &x, std::vector<T> &wghx, T *fk )
 #pragma omp parallel for
     for( int j=0; j<ngauss; j++ ) 
     {
-      T *s1_j = gmm->s1[j];
-      T *s2_j = gmm->s2[j];
+      T *s1_j = s1[j];
+      T *s2_j = s2[j];
       T *mean_j = gmm->mean[j];
       T *var_j = gmm->var[j];
       T *p_j = p+j*ndim;
@@ -157,7 +182,7 @@ fisher<T>::compute( std::vector<T*> &x, std::vector<T> &wghx, T *fk )
 
       for( int k=ndim; k--; ) 
       {
-        p_j[k] = vc * ( ( s2_j[k] + mean_j[k] * ( mean_j[k]*gmm->s0[j] - (T)2.0*s1_j[k] ) ) / var_j[k] - gmm->s0[j] );
+        p_j[k] = vc * ( ( s2_j[k] + mean_j[k] * ( mean_j[k]*s0[j] - (T)2.0*s1_j[k] ) ) / var_j[k] - s0[j] );
       }   
     }
   } 

@@ -74,16 +74,19 @@ public:
   inline T* get_variance( int idx ) { return var[idx]; }
   inline T get_mixing_coefficients( int idx ) { return coef[idx]; }
 
-protected:
+  inline em_param get_params() { return param; }
 
   void set_mean( std::vector<T*> &_mean );
   void set_variance( std::vector<T*> &_var );
   void set_mixing_coefficients( std::vector< T > &_coef ); 
 
+protected:
+
   T **mean, **var, *coef;
 
   void reset_stat_acc();
-  T accumulate_statistics( T* sample, bool _s0=true, bool _s1=true, bool _s2=true );
+  T accumulate_statistics( T* sample, bool _s0=true, bool _s1=true, bool _s2=true,
+			   T* s0_ext=0, T** s1_ext=0, T** s2_ext=0 );
   T *s0, **s1, **s2;
 
   em_param param;

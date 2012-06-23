@@ -316,6 +316,7 @@ gaussian_mixture<T>::em( std::vector<T*> &samples )
 
   nsamples = (int)samples.size();
 
+  std::cout << "Computing variance floor..." << std::endl;
   compute_variance_floor(samples);
 
   std::cout << "  Number of Gaussians: " << ngauss   << std::endl;
@@ -337,6 +338,7 @@ gaussian_mixture<T>::em( std::vector<T*> &samples )
     llh_curr=0.0;
     for( int n=0; n<nsamples; ++n )
     {
+      if (n % 5000 == 0) std::cout << "     (e-step): updating statistics for sample " << n << " of " << nsamples << "..." << std::endl;
       llh_curr += (double)accumulate_statistics( samples[n] );
     }
     llh_curr /= double(nsamples);
@@ -357,6 +359,7 @@ gaussian_mixture<T>::em( std::vector<T*> &samples )
     llh_prev = llh_curr;
 
     // update model parameters (M-step)
+    std::cout << "     (m-step): updating model..." << std::endl;
     update_model();
   }
 }
@@ -458,19 +461,19 @@ gaussian_mixture<T>::accumulate_statistics( T* x, bool _s0, bool _s1, bool _s2,
   T** s1_active;
   T** s2_active;
 
-  if (s0)
+  if (s0_ext)
   {
     s0_active = s0_ext;
   } else {
     s0_active = s0;
   }
-  if (s1)
+  if (s1_ext)
   {
     s1_active = s1_ext;
   } else {
     s1_active = s1;
   }
-  if (s2)
+  if (s2_ext)
   {
     s2_active = s2_ext;
   } else {

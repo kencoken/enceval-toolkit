@@ -56,6 +56,7 @@ public:
   ~gaussian_mixture();
 
   void set( std::vector<T*> &_mean, std::vector<T*> &_var, std::vector<T>  &_coef );
+  void random_init( std::vector<T*> &samples, int seed=-1 );
 
   void em( std::vector<T*> &samples );
 

@@ -270,6 +270,60 @@ gaussian_mixture<T>::set( std::vector<T*> &_mean,
 
 }
 
+/// \bief random initialization of mean vectors
+/// 
+/// \param samples samples list
+///
+/// \return none
+///
+/// \author Jorge Sanchez
+/// \date    August 2009
+
+template<class T>
+void 
+gaussian_mixture<T>::random_init( std::vector<T*> &samples, int seed )
+{
+  int N=samples.size();
+  assert( N>0 );
+
+  T dmin[ndim], dmax[ndim];
+  for( int i=0; i<ndim; ++i )
+    dmin[i] = dmax[i] = samples[0][i];
+
+  for( int n=1; n<N; ++n )
+  {
+    for( int i=0; i<ndim; ++i )
+    {
+      if( samples[n][i]<dmin[i] )
+        dmin[i] = samples[n][i];
+      else if( samples[n][i]>dmax[i] )
+        dmax[i] = samples[n][i];
+    }
+  }
+  T m[ndim], v[ndim];
+  sample_mean( samples, m, ndim );
+  sample_variance( samples, m, v, ndim );
+  
+  srand( seed );
+
+  for( int k=ngauss; k--; )
+  {
+    for( int i=ndim; i--; )
+    {
+      T drange = dmax[i]-dmin[i];
+      mean[k][i] = dmin[i]+drange*T(rand())/T(RAND_MAX);
+      var[k][i] = std::max( (T)param.variance_floor, (T)0.1*drange*drange );
+    }
+    coef[k] = 1.0/T(ngauss);
+  }
+
+  // precompute constants
+  precompute_aux_var();
+
+  // reset accumulators
+  reset_stat_acc();
+}
+
 /// \brief Adaptive variance floornig
 /// 
 /// \param samples samples list

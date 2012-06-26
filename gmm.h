@@ -93,6 +93,8 @@ protected:
 
   void init();
 
+  void random_init( std::vector<T*> &samples, int seed=-1 );
+
   void clean();
 
   void compute_variance_floor( std::vector<T*> &x );

@@ -281,7 +281,7 @@ gaussian_mixture<T>::set( std::vector<T*> &_mean,
 
 template<class T>
 void 
-gaussian_mixture<T>::random_init( std::vector<T*> &samples, int seed=-1 )
+gaussian_mixture<T>::random_init( std::vector<T*> &samples, int seed )
 {
   int N=samples.size();
   assert( N>0 );

@@ -3,13 +3,13 @@ function code = encode(obj, feats)
 
     % Initialize encoder wrapper if not done already ----------------------
 
-    if isempty(obj.fc)
+    if isempty(obj.fc_)
         obj.fisher_params_.grad_weights = obj.grad_weights;
         obj.fisher_params_.grad_means = obj.grad_means;
         obj.fisher_params_.grad_variances = obj.grad_variances;
         obj.fisher_params_.alpha = obj.alpha;
         obj.fisher_params_.pnorm = obj.pnorm;
-        obj.fc_ = FisherEncoder(obj.codebook_, fisher_params);
+        obj.fc_ = FisherEncoder(obj.codebook_, obj.fisher_params_);
     else
         if ((obj.fisher_params_.grad_weights ~= obj.grad_weights) || ...
                 (obj.fisher_params_.grad_means ~= obj.grad_means) || ...
@@ -23,7 +23,7 @@ function code = encode(obj, feats)
 
     % Apply encoding ------------------------------------------------------
     
-    code = fc.encode(feats);
+    code = obj.fc_.encode(feats);
 
 end
 

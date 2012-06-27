@@ -101,7 +101,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
         }
         // copy across to a vector
         for (int mi = 0; mi < n_gauss; ++mi) {
-            init_mean[mi] = &init_mean_arr[n_gauss*mi];
+            init_mean[mi] = &init_mean_arr[n_dim*mi];
         } 
     }
     if (nrhs >= 6) {
@@ -114,7 +114,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
         }
         // copy across to a vector
         for (int mi = 0; mi < n_gauss; ++mi) {
-            init_var[mi] = &init_var_arr[n_gauss*mi];
+            init_var[mi] = &init_var_arr[n_dim*mi];
         } 
     }
     if (nrhs >= 7) {

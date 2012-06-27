@@ -138,7 +138,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
         }
         // copy across to a vector
         for (int mi = 0; mi < n_gauss; ++mi) {
-            init_mean[mi] = &init_mean_arr[n_gauss*mi];
+            init_mean[mi] = &init_mean_arr[n_dim*mi];
         } 
     }
     
@@ -152,7 +152,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
         }
         // copy across to a vector
         for (int mi = 0; mi < n_gauss; ++mi) {
-            init_var[mi] = &init_var_arr[n_gauss*mi];
+            init_var[mi] = &init_var_arr[n_dim*mi];
         } 
     }
     
@@ -178,10 +178,19 @@ void mexFunction( int nlhs, mxArray *plhs[],
     gaussian_mixture<float> gmmproc(gmm_params, n_gauss, n_dim);
     mexPrintf("DONE\n");
     
-    mexPrintf("Setting up Model...");
-    if (pmxInitMean && pmxInitVar && pmxInitCoef) {
+    if (pmxInitMean && pmxInitVar && pmxInitCoef) 
+    {
+        mexPrintf("Setting up the model to specified mean, var, and coef...");
         gmmproc.set(init_mean, init_var, init_coef);
     }
+    else
+    {
+        int seed = 42;
+        
+        mexPrintf("Setting up the model to random mean, var, and coef...");
+        gmmproc.random_init(samples, seed);
+    }
+        
     mexPrintf("DONE\n");
     
     mexPrintf("Running EM...");

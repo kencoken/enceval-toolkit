@@ -1,9 +1,9 @@
-function codebook = loadcodebook(codebkgen, prms)
-%LOADCODEBOOK Summary of this function goes here
+function low_proj = loaddimred(dimred, prms)
+%loaddimred Summary of this function goes here
 %   Detailed explanation goes here
 
-if exist(prms.codebook,'file')
-    load(prms.codebook);
+if exist(prms.dimred,'file')
+    load(prms.dimred);
 else
     trainval_files = prms.imdb.images.name(...
                     prms.imdb.images.set == prms.imdb.sets.TRAIN | ...
@@ -18,9 +18,9 @@ else
     end
     
     % do training...
-    codebook = codebkgen.train(imfiles);
+    low_proj = dimred.train(imfiles);
     
-    save(prms.codebook,'codebook','codebkgen');
+    save(prms.dimred, 'low_proj');
 end
 
 end

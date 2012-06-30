@@ -9,5 +9,18 @@ function [feats, frames] = compute(obj, im)
         'FloatDescriptors', obj.float_descriptors);
     feats = single(feats);
     
+    if obj.remove_zero
+        % remove zero features
+        nz_feat = any(feats, 1);
+        
+        feats = feats(:, nz_feat);
+        frames = frames(:, nz_feat);
+    end
+    
+    if ~isempty(obj.low_proj)
+        % dimensionality reduction
+        feats = obj.low_proj * feats;        
+    end
+    
 end
 

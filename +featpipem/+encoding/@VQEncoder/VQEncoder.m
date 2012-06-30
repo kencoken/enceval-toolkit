@@ -4,10 +4,10 @@ classdef VQEncoder < handle & featpipem.encoding.GenericEncoder
     properties
         norm_type % 'l1' or 'l2'
         max_comps % -1 for exact
+        codebook_
     end
     
     properties(SetAccess=protected)
-        codebook_
         kdtree_
     end
     
@@ -21,13 +21,20 @@ classdef VQEncoder < handle & featpipem.encoding.GenericEncoder
             obj.codebook_ = codebook;
             obj.kdtree_ = vl_kdtreebuild(obj.codebook_);
         end
+        
         function dim = get_input_dim(obj)
             dim = size(obj.codebook_,1);
         end
+        
         function dim = get_output_dim(obj)
             dim = size(obj.codebook_,2);
         end
+                
+        % compute encoding
         code = encode(obj, feats)
+        
+        % compute assignent matrix
+        assign = get_assignments(obj, feats)
     end
     
 end

@@ -7,10 +7,10 @@ classdef KCBEncoder < handle & featpipem.encoding.GenericEncoder
         num_nn       % number of nearest neighbour bases to assign to
         sigma        % sigma of Gaussian bases
         kcb_type     % 'unc', 'kcb', 'pla' - KCB method, see paper
+        codebook_
     end
     
     properties(SetAccess=protected)
-        codebook_
         kdtree_
     end
     
@@ -33,7 +33,12 @@ classdef KCBEncoder < handle & featpipem.encoding.GenericEncoder
         function dim = get_output_dim(obj)
             dim = size(obj.codebook_,2);
         end
+        
+        % compute encoding
         code = encode(obj, feats)
+        
+        % compute assignent matrix
+        assign = get_assignments(obj, feats)
     end
     
 end

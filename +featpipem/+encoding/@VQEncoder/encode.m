@@ -9,13 +9,11 @@ function code = encode(obj, feats)
             'MaxComparisons', obj.max_comps);
     else
         % using exact assignment...
-        [codeids, codeids] = min(vl_alldist(obj.codebook_, feats), [], 1); %#ok<ASGLU>
+        [~, codeids] = min(vl_alldist(obj.codebook_, feats), [], 1);
     end
     
-    code = single(zeros(size(obj.codebook_,2),1));
-    for idx = 1:length(codeids)
-        code(codeids(idx)) = code(codeids(idx)) + 1;
-    end
+    code = vl_binsum(zeros(size(obj.codebook_, 2), 1), 1, double(codeids));
+    code = single(code);
     
     % Normalize -----------------------------------------------------------
     

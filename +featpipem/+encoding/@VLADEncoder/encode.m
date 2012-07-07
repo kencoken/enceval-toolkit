@@ -14,7 +14,7 @@ function code = encode(obj, feats)
     norm_cluster = true;
     
     if norm_cluster
-        % normalise the mean vector of each cluster by the cluster size, then subtract the cluster center
+        % normalise the sum of vectors in each cluster by the cluster size (i.e. compute the mean vector), then subtract the cluster center
         non_empty_clusters = (word_num ~= 0);
         code(:, non_empty_clusters) = bsxfun(@times, code(:, non_empty_clusters), 1 ./ word_num(non_empty_clusters)) - obj.subencoder.codebook_(:, non_empty_clusters);
     else

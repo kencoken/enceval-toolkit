@@ -1,7 +1,7 @@
 % parallel
 run('/users/karen/src/img_class/enceval-toolkit/startup.m');
 
-DataDir = '/work/karen/img_class/enceval/data_VLAD_hard_cluster_norm_nz_idf/';
+DataDir = '/work/karen/img_class/enceval/data_VLAD_hard_cluster_norm/';
 
 ensure_dir(fullfile(DataDir,'codebooks/'));
 ensure_dir(fullfile(DataDir, 'dim_red/'));

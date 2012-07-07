@@ -1,7 +1,7 @@
 %%
 % clear;
 
-ResDir = '/work/karen/img_class/enceval/data_VLAD_hard_cluster_norm_nz/results/';
+ResDir = '/work/karen/img_class/enceval/data_VLAD_hard_cluster_norm/results/';
 
 ResFiles = dir([ResDir '/*.mat']);
 

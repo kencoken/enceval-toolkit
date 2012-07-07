@@ -1,9 +1,10 @@
 % parallel
 run('/users/karen/src/img_class/enceval-toolkit/startup.m');
 
-DataDir = '/work/karen/img_class/enceval/data_VLAD_soft_g50_NN10/';
+DataDir = '/work/karen/img_class/enceval/data_VLAD_hard_cluster_norm_nz_idf/';
 
 ensure_dir(fullfile(DataDir,'codebooks/'));
+ensure_dir(fullfile(DataDir, 'dim_red/'));
 ensure_dir(fullfile(DataDir,'codes/'));
 ensure_dir(fullfile(DataDir,'compdata/'));
 ensure_dir(fullfile(DataDir,'results/'));
@@ -14,6 +15,8 @@ VocSize = 512;
 
 % descriptor dimensionality after PCA
 desc_dim = 80;
+
+hard_assign = true;
 
 %% initialize experiment parameters
 prms.experiment.name = 'VLAD'; % experiment name - prefixed to all output files other than codes
@@ -39,6 +42,7 @@ prms.splits.test = {'test'}; % cell array of IMDB splits to use when testing
 
 % initialize experiment classes
 featextr = featpipem.features.PhowExtractor();
+featextr.remove_zero = true;
 featextr.step = 3;
 
 %% train/load dimensionality reduction
@@ -52,10 +56,10 @@ end
 
 %% train/load codebook
 codebkgen = featpipem.codebkgen.KmeansCodebkGen(featextr, VocSize);
-codebook = featpipem.wrapper.loadcodebook(codebkgen, prms);
+[codebook, word_freq] = featpipem.wrapper.loadcodebook(codebkgen, prms);
 
 %% initialize encoder + pooler
-if false
+if hard_assign
     % hard assignment
     subencoder = featpipem.encoding.VQEncoder(codebook);
     subencoder.max_comps = -1;
@@ -65,12 +69,12 @@ else
     subencoder.max_comps = -1;
     
     % 25 too small
-    subencoder.sigma = 50;
-    
-    subencoder.num_nn = 10;
+    subencoder.sigma = 50;    
+    subencoder.num_nn = 5;
 end
 
 encoder = featpipem.encoding.VLADEncoder(subencoder);
+encoder.word_freq = word_freq;
 
 pooler = featpipem.pooling.SPMPooler(encoder);
 pooler.subbin_norm_type = 'l2';

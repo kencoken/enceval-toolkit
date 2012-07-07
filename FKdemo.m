@@ -1,9 +1,10 @@
 % parallel
 run('/users/karen/src/img_class/enceval-toolkit/startup.m');
 
-DataDir = '/work/karen/img_class/enceval/data_sift_FK/';
+DataDir = '/work/karen/img_class/enceval/data_sift_PCA-80_FK_rand_GMM_subbin_l2_helli/';
 
 ensure_dir(fullfile(DataDir, 'codebooks/'));
+ensure_dir(fullfile(DataDir, 'dim_red/'));
 ensure_dir(fullfile(DataDir, 'codes/'));
 ensure_dir(fullfile(DataDir, 'compdata/'));
 ensure_dir(fullfile(DataDir, 'results/'));
@@ -11,15 +12,20 @@ ensure_dir(fullfile(DataDir, 'results/'));
 % bSIFT = true;
 bCrossValSVM = true;
 
-% VocSize = 4000;
-VocSize = 256;
+% voc_size = 4000;
+voc_size = 256;
+
+% descriptor dimensionality after PCA
+desc_dim = 80;
+% desc_dim = 128;
 
 %% initialize experiment parameters
 prms.experiment.name = 'FKtest'; % experiment name - prefixed to all output files other than codes
 prms.experiment.codes_suffix = 'FKtest'; % string prefixed to codefiles (to allow sharing of codes between multiple experiments)
 prms.experiment.classif_tag = ''; % additional string added at end of classifier and results files (useful for runs with different classifier parameters)
 prms.imdb = load('/work/karen/img_class/enceval/imdb/imdb-VOC2007.mat'); % IMDB file
-prms.codebook = fullfile(DataDir, sprintf('codebooks/GMM_%d.mat', VocSize)); % desired location of codebook
+prms.codebook = fullfile(DataDir, sprintf('codebooks/GMM_%d.mat', voc_size)); % desired location of codebook
+prms.dimred = fullfile(DataDir, sprintf('dim_red/PCA_%d.mat', desc_dim)); % desired location of low-dim projection matrix
 prms.experiment.dataset = 'VOC2007'; % dataset name - currently only VOC2007 supported
 prms.experiment.evalusing = 'precrec'; % evaluation method - currently only precision recall supported
 
@@ -28,7 +34,7 @@ prms.paths.codes = fullfile(DataDir,'codes/'); % path where codefiles should be 
 prms.paths.compdata = fullfile(DataDir,'compdata/'); % path where all other compdata (kernel matrices, SVM models etc.) should be stored
 prms.paths.results = fullfile(DataDir,'results/'); % path where results should be stored
 
-prms.chunkio.chunk_size = 20; % number of encodings to store in single chunk
+prms.chunkio.chunk_size = 40; % number of encodings to store in single chunk
 prms.chunkio.num_workers = max(matlabpool('size'), 1); % number of workers to use when generating chunks
 
 % initialize split parameters
@@ -39,30 +45,43 @@ prms.splits.test = {'test'}; % cell array of IMDB splits to use when testing
 featextr = featpipem.features.PhowExtractor();
 featextr.step = 3;
 
-codebkgen = featpipem.codebkgen.GMMCodebkGen(featextr, VocSize);
-codebkgen.descount_limit = 1e6;
+%% train/load dimensionality reduction
+if desc_dim ~= 128
+    dimred = featpipem.dim_red.PCADimRed(featextr, desc_dim);
+    featextr.low_proj = featpipem.wrapper.loaddimred(dimred, prms);
+else
+    % no dimensionality reduction
+    featextr.low_proj = [];
+end
 
-%% TRAIN/LOAD CODEBOOK
-% -------------------------------------------
+%% train/load codebook
+codebkgen = featpipem.codebkgen.GMMCodebkGen(featextr, voc_size);
+codebkgen.GMM_init = 'rand';
 
 codebook = featpipem.wrapper.loadcodebook(codebkgen, prms);
 
-% initialize more experiment classes
+%% initialize encoder + pooler
 encoder = featpipem.encoding.FKEncoder(codebook);
 encoder.pnorm = single(0.0);
+encoder.alpha = single(1.0);
+encoder.grad_weights = false;
+encoder.grad_means = true;
+encoder.grad_variances = true;
 
 pooler = featpipem.pooling.SPMPooler(encoder);
-pooler.subbin_norm_type = 'none';
-pooler.norm_type = 'l2';
-pooler.pool_type = 'max';
-pooler.kermap = 'none';
+pooler.subbin_norm_type = 'l2';
+pooler.norm_type = 'none';
+pooler.kermap = 'hellinger';
+pooler.post_norm_type = 'l2';
+pooler.pool_type = 'sum';
 
 %% classification
 classifier = featpipem.classification.svm.LibSvmDual();
 
 if bCrossValSVM
         
-    c = 1:0.2:8;
+%     c = 1:0.5:5;    
+    c = 10;
     
     for ci = 1:length(c)
         
@@ -75,7 +94,7 @@ if bCrossValSVM
     
 else
     
-    classifier.c = 6.6;
+    classifier.c = 1.6;
     AP = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);
 
 end

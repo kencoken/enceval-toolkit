@@ -56,11 +56,25 @@ if bCrossValSVM
     prms.splits.train = {'train'};
     prms.splits.test = {'val'};
     c = [1.6 1.8 2 2.2 2.4 2.6 2.8 3 3.2 3.4 3.6 3.8 4 4.2 4.4 4.6 4.8 5 5.2 5.4 5.6 5.8 6 6.2 6.4 6.6 6.8 7 7.2 7.4 7.6 7.8];
+    maxmap = 0;
+    maxci = 1;
     for ci = 1:length(c)
         prms.experiment.classif_tag = sprintf('c%f', c(ci));
         classifier.c = c(ci);
         AP = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);
+    
+        map = mean(AP{1});
+        if map > maxmap
+            maxci = ci;
+            maxmap = map;
+        end
     end
+    
+    prms.splits.train = {'train', 'val'};
+    prms.splits.test = {'test'};
+    prms.experiment.classif_tag = sprintf('TESTc%f', c(maxci));
+    classifier.c = c(maxci);
+    AP = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);
 else
     classifier.c = 2.8;
     AP = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);

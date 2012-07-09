@@ -1,7 +1,7 @@
 #include <string.h>
 #include "mex.h"
 #include "matrix.h"
-#include "../../../../../featpipec/src/classification/svm/liblinear.h"
+#include "featpipec/classification/svm/liblinear.h"
 #include "../../../class_handle.h"
 
 // f(obj, command)

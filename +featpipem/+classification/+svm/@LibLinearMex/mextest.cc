@@ -1,6 +1,6 @@
 #include "mex.h"
 #include "matrix.h"
-#include "../../../../../featpipec/src/classification/svm/liblinear.h"
+#include "featpipec/src/classification/svm/liblinear.h"
 #include "../../../class_handle.h"
 
 // [est_label, scoremat] = f(obj, input)

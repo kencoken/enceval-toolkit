@@ -106,34 +106,6 @@ else
     save(kPQCodesFile, 'pqcodes');
 end
 
-% TEMPORARY CODE
-% ch = load(train_chunks{1}{1});
-% PQFullCodes = zeros(size(ch.chunk,1),size(pqcodes('test'),2));
-% OrigFullCodes = zeros(size(ch.chunk,1),size(pqcodes('test'),2));
-% clear ch;
-% 
-% for setName = prms.splits.test
-%     fprintf('Computing FULL PQ codes for set %s...\n',setName{1});
-%     pqcodes_set = pqcodes(setName{1})
-%     chunk_files_set = chunk_files(setName{1});
-%     for ci = 1:length(chunk_files_set)        
-%         ch = load(chunk_files_set{ci});
-%         
-%         OrigFullCodes(:,ch.index) = ch.chunk;
-%         
-%         for codeidx = ch.index
-%             startidx = 1;
-%             idxinc = size(pqcodebook{1},1);
-%             endidx = idxinc;
-%             for qi = 1:length(pqcodebook) % iterate through subquantizers
-%                 PQFullCodes(startidx:endidx,ch.index) = pqcodebook{qi}(:,pqcodes_set(qi,ch.index));
-%                 startidx = startidx + idxinc;
-%                 endidx = endidx + idxinc;
-%             end
-%         end
-%     end
-% end
-
 % % --------------------------------
 % % Compute PQ Index
 % % --------------------------------
@@ -244,18 +216,6 @@ for si = 1:length(prms.splits.test)
     pqcodes_set = pqcodes(prms.splits.test{si});
     
     tRankingTime = tic;
-%    scoremat_pf = single(zeros(num_classes, size(pqcodes(prms.splits.test{si}),2)));
-%     %for fi = 1:size(pqcodes_set,2) % iterate through test features
-%     parfor fi = 1:size(pqcodes_set,2) % iterate through test features
-%         for ci = 1:num_classes % iterate through classes
-%             feat_score = single(0);
-%             for qi = 1:size(pqcodes_set,1) % iterate through subquantizers
-%                feat_score = feat_score + wcLUT{ci}(qi, pqcodes_set(qi, fi)); %#ok<PFBNS>
-%             end
-%             
-%             scoremat_pf(ci, fi) = feat_score + biasterm(ci); %#ok<PFBNS>
-%         end
-%     end
 
     scoremat_pf = featpipem.pq.calcScoremat(wcLUT, biasterm, pqcodes_set);
      

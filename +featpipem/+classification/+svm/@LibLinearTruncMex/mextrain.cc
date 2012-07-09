@@ -1,7 +1,7 @@
 #include <vector>
 #include "mex.h"
 #include "matrix.h"
-#include "../../../../../featpipec/src/classification/svm/liblineartrunc.h"
+#include "featpipec/src/classification/svm/liblineartrunc.h"
 #include "../../../class_handle.h"
 
 // f(obj, input, labels)

@@ -19,12 +19,16 @@ end
 
 % preallocate kernel matrix
 ch = load(chunk_files{1}{1});
+
+size_chunk = size(ch.chunk, 2);
 size_est = 0;
+
 for i = 1:length(chunk_files)
-    size_est = size_est + size(ch.chunk, 2)*length(chunk_files{i});
+    size_est = size_est + size_chunk * length(chunk_files{i});
 end
+
 K = zeros(size_est);
-clear ch size_est;
+clear ch;
 
 idxoffseti = 0;
 maxidxi = 0;
@@ -32,55 +36,79 @@ maxidxi = 0;
 % preallocation)
 maxidx_ker = 0;
 
+% do_norm = false;
+
 % iterate over first chunkfile
 for si = 1:length(chunk_files)
+    
     idxoffseti = idxoffseti+maxidxi;
-    maxidxi = 0;
-    for ci = 1:length(chunk_files{si})
-        fprintf('Computing datafile for chunk %d of %d (in set %d of %d)\n', ...
-            ci, length(chunk_files{si}), si, length(chunk_files));
         
+%     for ci = 1:length(chunk_files{si})
+    parfor ci = 1:length(chunk_files{si})
+        
+        fprintf('Computing datafile for chunk %d of %d (in set %d of %d)\n', ci, length(chunk_files{si}), si, length(chunk_files));
+        
+        % load chunk
         ch1 = load(chunk_files{si}{ci});
+        
+%         if do_norm
+%             ch1.chunk = bsxfun(@times, ch1.chunk, 1 ./ sqrt(sum(ch1.chunk .^ 2, 1)));
+%         end
+        
         % apply index offset if required
-        ch1.index = ch1.index + idxoffseti;
-        % store maxidxi for current set (to calculate offset for next set)
-        if ch1.index(end) > maxidxi, maxidxi = ch1.index(end); end
-        % store absolute max index to aid resizing of kernel matrix at end
-        if ch1.index(end) > maxidx_ker, maxidx_ker = ch1.index(end); end
+        idx1{ci} = ch1.index + idxoffseti;
+        
+        % part of K
+        K1{ci} = zeros(size(ch1.chunk, 2), size_est);
+        
         % iterate over second chunkfile
         idxoffsetj = 0;
         maxidxj = 0;
+        
         for sj = 1:length(chunk_files)
-            idxoffsetj = idxoffsetj+maxidxj;
-            maxidxj = 0;
+            
+            idxoffsetj = idxoffsetj + maxidxj;
+            
+            idx2end = zeros(length(chunk_files{sj}), 1);
+            
             for cj = 1:length(chunk_files{sj})
-                fprintf('  Processing %s vs. %s\n', chunk_files{si}{ci}, chunk_files{sj}{cj});
+                
                 ch2 = load(chunk_files{sj}{cj});
+                
+%                 if do_norm
+%                     ch2.chunk = bsxfun(@times, ch2.chunk, 1 ./ sqrt(sum(ch2.chunk .^ 2, 1)));
+%                 end
+                
                 % apply index offset if required
                 ch2.index = ch2.index + idxoffsetj;
-                % store maxidxj for current set (to calculate offset for next set)
-                if ch2.index(end) > maxidxj, maxidxj = ch2.index(end); end
-                % TEMPORARY CODE - ensure all codes are L2 normalized
-                for i = 1:size(ch1.chunk,2)
-                    ch1.chunk(:,i) = ch1.chunk(:,i)/norm(ch1.chunk(:,i),2);
-                end
-                for i = 1:size(ch2.chunk,2)
-                    ch2.chunk(:,i) = ch2.chunk(:,i)/norm(ch2.chunk(:,i),2);
-                end
-                % do computation of sub-part of kernel matrix
-                k = ch1.chunk'*ch2.chunk;
-                K(ch1.index, ch2.index) = k;
-                K(ch2.index, ch1.index) = k';
+                idx2end(cj) = ch2.index(end);
+                
+                % do computation of sub-part of kernel matrix                                
+                K1{ci}(:, ch2.index) = ch1.chunk'*ch2.chunk;
+                
             end
+            
+            % store maxidxj for current set (to calculate offset for next set)
+            maxidxj = max(idx2end);
         end
     end
+    
+    % copy the data from K1 to K
+    for ci = 1:length(chunk_files{si})
+        K(idx1{ci}, :) = K1{ci};
+    end
+    
+    % store maxidxi for current set (to calculate offset for next set)
+    maxidxi = max(cellfun(@(x) x(end), idx1));
+    
+    % store absolute max index to aid resizing of kernel matrix at end
+    maxidx_ker = max(maxidx_ker, maxidxi);
 end
 
 % use maxidx_ker to resize output matrix to be correct size
-K = K(1:maxidx_ker,1:maxidx_ker);
+K = K(1:maxidx_ker, 1:maxidx_ker);
 
 fprintf('Kernel matrix computed\n');
-
 
 end
 

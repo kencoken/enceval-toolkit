@@ -22,22 +22,30 @@ function pcode = compute(obj, imsize, feats, frames)
     
     bin_count = bin_quads_count + obj.horiz_divs + 1;
     
-    pcode = single(zeros(obj.encoder_.get_output_dim(),bin_count));
+    pcode = zeros(obj.encoder_.get_output_dim(), bin_count, 'single');
     
     % first compute for finest 'quarter' bins
     h_unit = imsize(1) / obj.quad_divs;
     w_unit = imsize(2) / obj.quad_divs;
     y_bin = ceil(frames(2,:) / h_unit);
     x_bin = ceil(frames(1,:) / w_unit);
+    
+    feats_sel_num = zeros(obj.quad_divs ^ 2, 1);
+    code_idx = 0;
+    
     for sx_bin = 1:obj.quad_divs
         for sy_bin = 1:obj.quad_divs
+            
+            code_idx = code_idx + 1;
+            
             feats_sel = feats(:, (y_bin == sy_bin) & (x_bin == sx_bin));
+            feats_sel_num(code_idx) = size(feats_sel, 2);
+            
             if ~isempty(feats_sel)
                 code = obj.encoder_.encode(feats_sel);
-                if nnz(isnan(code))
-                    error('Code contains NaNs');
+                if nnz(isnan(code)), error('Code contains NaNs'); end
+                pcode(:, code_idx) = code;
                 end
-                pcode(:,(sx_bin-1)*obj.quad_divs+sy_bin) = code;
             else
                 warning('SPMPool:EmptyBin','empty bin!');
             end
@@ -96,7 +104,7 @@ function pcode = compute(obj, imsize, feats, frames)
             feats_sel = feats(:, (h_ybin == sy_bin));
             if ~isempty(feats_sel)
                 code =  obj.encoder_.encode(feats_sel);
-                if nnz(isnan(code)), error('Code contains NaNs'); end
+%                 if nnz(isnan(code)), error('Code contains NaNs'); end
                 pcode(:,bin_quads_count+sy_bin) = code;
             else
                 warning('SPMPool:EmptyBin','empty bin!');
@@ -104,44 +112,66 @@ function pcode = compute(obj, imsize, feats, frames)
         end
     end
     
-    % now combine the first binset to make up the whole image bin
-    if strcmp(obj.pool_type,'sum')
-        pcode(:,end) = sum(pcode(:,1:(obj.quad_divs*obj.quad_divs)),2);
+    if false
+        
+        % now combine the first binset to make up the whole image bin
+        if strcmp(obj.pool_type,'sum')
+            pcode(:, end) = pcode(:, 1 : obj.quad_divs ^ 2) * (feats_sel_num / sum(feats_sel_num));
+        elseif strcmp(obj.pool_type,'max')
+            pcode(:,end) = max(pcode(:,1:obj.quad_divs^2),[],2);
+        end
+        
+    else    
+        % compute whole image encoding from scratch
+        pcode(:, end) = obj.encoder_.encode(feats);    
     end
-    if strcmp(obj.pool_type,'max')
-        pcode(:,end) = max(pcode(:,1:(obj.quad_divs*obj.quad_divs)),[],2);
-    end
-    if nnz(pcode(:,end)) < 1, error('Code is all zeros!'); end
+    
+%     if nnz(pcode(:,end)) < 1, error('Code is all zeros!'); end
     
     % now normalize all sub-bins
-    for i = 1:size(pcode,2)
-        if strcmp(obj.subbin_norm_type,'l2')
-            pcode(:,i) = pcode(:,i)/norm(pcode(:,i),2);
-        end
-        if strcmp(obj.subbin_norm_type,'l1')
-            pcode(:,i) = pcode(:,i)/norm(pcode(:,i),1);
-        end
+    if strcmp(obj.subbin_norm_type, 'l2')
+        
+        pcode_norm = sqrt(sum(pcode .^ 2, 1));
+        pcode_norm = max(pcode_norm, eps);
+        pcode = bsxfun(@times, pcode, 1 ./ pcode_norm);
+        
+    elseif strcmp(obj.subbin_norm_type, 'l1')
+        
+        pcode_norm = sum(pcode, 1);
+        pcode_norm = max(pcode_norm, eps);
+        pcode = bsxfun(@times, pcode, 1 ./ pcode_norm);
+        
     end
     
+    % vectorise
     pcode = pcode(:);
     
     % now normalize whole code
     if strcmp(obj.norm_type,'l2')
         pcode = pcode/norm(pcode,2);
-    end
-    if strcmp(obj.norm_type,'l1')
+    elseif strcmp(obj.norm_type,'l1')
         pcode = pcode/norm(pcode,1);
     end
     
     % now apply kernel map if specified
-    % (note: when adding extra kernel maps, note that the getDim function
-    % must also be modified to reflect the appropriate increase in code
-    % dimensionality)
-    if strcmp(obj.kermap,'homker')
-        pcode = vl_homkermap(pcode, 1, 'kchi2');
-    end
-    if strcmp(obj.kermap,'hellinger')
-        pcode = sqrt(pcode);
+    if ~isequal(obj.kermap, 'none')        
+        % (note: when adding extra kernel maps, note that the getDim function
+        % must also be modified to reflect the appropriate increase in code
+        % dimensionality)
+        if strcmp(obj.kermap,'homker')
+            % chi-squared approximation
+            pcode = vl_homkermap(pcode, 1, 'kchi2');
+        elseif strcmp(obj.kermap,'hellinger')
+            % "generalised" (signed) Hellinger kernel
+            pcode = sign(pcode) .* sqrt(abs(pcode));        
+        end
+
+        % now post-normalize whole code
+        if strcmp(obj.post_norm_type,'l2')
+            pcode = pcode/norm(pcode,2);
+        elseif strcmp(obj.post_norm_type,'l1')
+            pcode = pcode/norm(pcode,1);
+        end
     end
 end
 

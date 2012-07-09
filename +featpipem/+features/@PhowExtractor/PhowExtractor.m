@@ -12,6 +12,12 @@ classdef PhowExtractor < handle & featpipem.features.GenericFeatExtractor
         window_size
         magnif
         float_descriptors
+        
+        % remove zero vector
+        remove_zero
+        
+        % dimensionality reducing projection
+        low_proj
     end
     
     methods
@@ -25,6 +31,10 @@ classdef PhowExtractor < handle & featpipem.features.GenericFeatExtractor
             obj.window_size = 1.5;
             obj.magnif = 6;
             obj.float_descriptors = false;
+            
+            obj.remove_zero = false;
+            obj.low_proj = [];
+            
             featpipem.utility.set_class_properties(obj, varargin);
         end
         [feats, frames] = compute(obj, im)

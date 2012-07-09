@@ -59,7 +59,7 @@ for targetsets = {'train', 'val', 'test'}
     chunk_files_by_worker = cell(prms.chunkio.num_workers, 1);
     
     % compute chunks
-    %for w = 1:prms.chunkio.num_workers
+%     for w = 1:prms.chunkio.num_workers
     parfor w = 1:prms.chunkio.num_workers
         % iterate through chunks assigned to current worker
         for c = 1:length(chunk_starts{w})
@@ -78,7 +78,13 @@ for targetsets = {'train', 'val', 'test'}
                 im = imread(fullfile(prms.paths.dataset, prms.imdb.images.name{ids(i)}));
                 im = featpipem.utility.standardizeImage(im);
                 [feats, frames] = featextr.compute(im);
-                chunk(:,i-chunk_starts{w}(c)+1) = encpooler.compute(size(im), feats, frames);
+                cur_code = encpooler.compute(size(im), feats, frames);
+                
+                if any(isnan(cur_code))
+                    error('NaNs in the code of chunk %d (worker: %d round: %d)!', i, w, c);
+                end
+                
+                chunk(:,i-chunk_starts{w}(c)+1) = cur_code;
             end
             index = chunk_starts{w}(c):chunk_starts{w}(c)+this_chunk_size-1;
             save_chunk_(path, chunk, index);

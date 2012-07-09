@@ -4,6 +4,7 @@ classdef SPMPooler < handle & featpipem.pooling.GenericPooler
     properties
         subbin_norm_type    % 'l1' or 'l2' (or other value = none)
         norm_type    % 'l1' or 'l2' (or other value = none)
+        post_norm_type    % 'l1' or 'l2' (or other value = none)
         pool_type    % 'sum' or 'max'
         quad_divs
         horiz_divs
@@ -19,6 +20,7 @@ classdef SPMPooler < handle & featpipem.pooling.GenericPooler
             % set default parameter values
             obj.subbin_norm_type = 'l2';
             obj.norm_type = 'l2';
+            obj.post_norm_type = 'none';
             obj.pool_type = 'sum';
             obj.quad_divs = 2;
             obj.horiz_divs = 3;

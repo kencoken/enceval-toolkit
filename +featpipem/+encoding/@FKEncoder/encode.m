@@ -9,6 +9,7 @@ function code = encode(obj, feats)
         obj.fisher_params_.grad_variances = obj.grad_variances;
         obj.fisher_params_.alpha = obj.alpha;
         obj.fisher_params_.pnorm = obj.pnorm;
+        
         obj.fc_ = FisherEncoder(obj.codebook_, obj.fisher_params_);
     else
         if ((obj.fisher_params_.grad_weights ~= obj.grad_weights) || ...

@@ -8,12 +8,12 @@ prms.experiment.name = 'FKtest'; % experiment name - prefixed to all output file
 prms.experiment.codes_suffix = 'FKtest'; % string prefixed to codefiles (to allow sharing of codes between multiple experiments)
 prms.experiment.classif_tag = ''; % additional string added at end of classifier and results files (useful for runs with different classifier parameters)
 prms.imdb = load(fullfile(DataDir,'imdb/imdb-VOC2007.mat')); % IMDB file
-prms.codebook = fullfile(DataDir, sprintf('data/codebooks/GMM_%d.mat', voc_size)); % desired location of codebook
-prms.dimred = fullfile(DataDir, sprintf('data/dimred/PCA_%d.mat', desc_dim)); % desired location of low-dim projection matrix
+prms.codebook = fullfile(DataDir, sprintf('data/codebooks/fkdemo_gmm_%d_%d.mat', voc_size, desc_dim)); % desired location of codebook
+prms.dimred = fullfile(DataDir, sprintf('data/dimred/fkdemo_pca_%d.mat', desc_dim)); % desired location of low-dim projection matrix
 prms.experiment.dataset = 'VOC2007'; % dataset name - currently only VOC2007 supported
 prms.experiment.evalusing = 'precrec'; % evaluation method - currently only precision recall supported
 
-prms.paths.dataset = TPDATASETPATH; % path to datasets
+prms.paths.dataset = '/work/ken/datasets_enceval'; % path to datasets
 prms.paths.codes = fullfile(DataDir,'data/codes/'); % path where codefiles should be stored
 prms.paths.compdata = fullfile(DataDir,'data/compdata/'); % path where all other compdata (kernel matrices, SVM models etc.) should be stored
 prms.paths.results = fullfile(DataDir,'data/results/'); % path where results should be stored
@@ -66,11 +66,25 @@ if bCrossValSVM
     prms.splits.train = {'train'};
     prms.splits.test = {'val'};
     c = [1.6 1.8 2 2.2 2.4 2.6 2.8 3 3.2 3.4 3.6 3.8 4 4.2 4.4 4.6 4.8 5 5.2 5.4 5.6 5.8 6 6.2 6.4 6.6 6.8 7 7.2 7.4 7.6 7.8];
+    maxmap = 0;
+    maxci = 1;
     for ci = 1:length(c)
         prms.experiment.classif_tag = sprintf('c%g', c(ci));
         classifier.c = c(ci);
         AP{ci} = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);
+    
+        map = mean(AP{1});
+        if map > maxmap
+            maxci = ci;
+            maxmap = map;
+        end
     end
+    
+    prms.splits.train = {'train', 'val'};
+    prms.splits.test = {'test'};
+    prms.experiment.classif_tag = sprintf('TESTc%f', c(maxci));
+    classifier.c = c(maxci);
+    AP = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);
 else
     classifier.c = 1.6;
     AP = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);

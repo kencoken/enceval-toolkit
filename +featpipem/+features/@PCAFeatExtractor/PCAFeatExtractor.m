@@ -2,9 +2,9 @@ classdef PCAFeatExtractor < handle & featpipem.features.GenericFeatExtractor
     %PCAFEATEXTRACTOR Class wrapping other feature extractor with PCA dim
     %reduction
     
-    properties(SetAccess = private)
+    properties(SetAccess = protected)
         featextr
-        out_dim
+        %out_dim
         proj
     end
     

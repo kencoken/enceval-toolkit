@@ -10,7 +10,8 @@ if nargin < 4 || isempty(dataset)
     dataset = '';
 end
 
-AP = struct;
+AP = zeros(1,size(scoremat,1));
+%AP = struct;
 
 fprintf('Retrieving ground truth from IMDB...\n');
 gt = featpipem.utility.getImdbGT(imdb, {testset}, 'outputSignedLabels', true);
@@ -34,10 +35,10 @@ for ci = 1:size(scoremat,1)
     prec = tp./(fp+tp);
     
     fprintf('Computing APs...\n');
-        
-    AP(ci).AP = featpipem.eval.VOCdevkit.VOCap(dataset, rec, prec);
-    AP(ci).prec10 = prec(10);
-    AP(ci).prec50 = prec(50);
+    AP(ci) = featpipem.eval.VOCdevkit.VOCap(dataset, rec, prec);    
+    %AP(ci).AP = featpipem.eval.VOCdevkit.VOCap(dataset, rec, prec);
+    %AP(ci).prec10 = prec(10);
+    %AP(ci).prec50 = prec(50);
     
     fprintf('DONE\n');
     

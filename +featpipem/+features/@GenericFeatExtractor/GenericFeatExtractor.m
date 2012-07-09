@@ -5,7 +5,7 @@ classdef GenericFeatExtractor < handle
     end
     
     properties(SetAccess = private)
-        outdim
+        out_dim
     end
     
     methods(Abstract)

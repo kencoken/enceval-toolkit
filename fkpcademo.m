@@ -32,7 +32,7 @@ featextr = featpipem.features.PCAFeatExtractor(featextr_phow, desc_dim);
 
 %% train/load dimensionality reduction
 if desc_dim < featextr_phow.out_dim
-    featpipem.wrapper.loaddimredextr(pcafeatextr, prms);
+    featpipem.wrapper.loaddimredextr(featextr, prms);
 end
 
 %% train/load codebook

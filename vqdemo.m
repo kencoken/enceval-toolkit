@@ -7,7 +7,7 @@ prms.experiment.name = 'vqdemo'; % experiment name - prefixed to all output file
 prms.experiment.codes_suffix = 'vqdemo'; % string prefixed to codefiles (to allow sharing of codes between multiple experiments)
 prms.experiment.classif_tag = ''; % additional string added at end of classifier and results files (useful for runs with different classifier parameters)
 prms.imdb = load(fullfile(DataDir,'imdb/imdb-VOC2007.mat')); % IMDB file
-prms.codebook = fullfile(DataDir, sprintf('data/codebooks/%d.mat', VocSize)); % desired location of codebook
+prms.codebook = fullfile(DataDir, sprintf('data/codebooks/kmeans_%d.mat', voc_size)); % desired location of codebook
 prms.experiment.dataset = 'VOC2007'; % dataset name - currently only VOC2007 supported
 prms.experiment.evalusing = 'precrec'; % evaluation method - currently only precision recall supported
 
@@ -27,7 +27,7 @@ prms.splits.test = {'test'}; % cell array of IMDB splits to use when testing
 featextr = featpipem.features.PhowExtractor();
 featextr.step = 3;
 
-codebkgen = featpipem.codebkgen.KmeansCodebkGen(featextr, VocSize);
+codebkgen = featpipem.codebkgen.KmeansCodebkGen(featextr, voc_size);
 codebkgen.descount_limit = 10e5;
 
 %% train/load codebook

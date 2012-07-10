@@ -7,7 +7,7 @@ if exist(prms.dimred,'file')
 else
     % only train PCA reduction if output dimension is less than or equal to
     % original feature dimension
-    if pcafeatextr.featextr.out_dim <= pcafeatextr.out_dim
+    if pcafeatextr.featextr.out_dim >= pcafeatextr.out_dim
         trainval_files = prms.imdb.images.name(...
                         prms.imdb.images.set == prms.imdb.sets.TRAIN | ...
                         prms.imdb.images.set == prms.imdb.sets.VAL);

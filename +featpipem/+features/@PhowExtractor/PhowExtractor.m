@@ -35,6 +35,8 @@ classdef PhowExtractor < handle & featpipem.features.GenericFeatExtractor
             obj.remove_zero = false;
             obj.low_proj = [];
             
+            obj.out_dim = 128;
+            
             featpipem.utility.set_class_properties(obj, varargin);
         end
         [feats, frames] = compute(obj, im)

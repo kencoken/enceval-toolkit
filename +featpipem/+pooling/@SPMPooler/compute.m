@@ -45,7 +45,6 @@ function pcode = compute(obj, imsize, feats, frames)
                 code = obj.encoder_.encode(feats_sel);
                 if nnz(isnan(code)), error('Code contains NaNs'); end
                 pcode(:, code_idx) = code;
-                end
             else
                 warning('SPMPool:EmptyBin','empty bin!');
             end

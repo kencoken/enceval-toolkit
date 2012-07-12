@@ -71,7 +71,7 @@ if bCrossValSVM
     for ci = 1:length(c)
         prms.experiment.classif_tag = sprintf('c%g', c(ci));
         classifier.c = c(ci);
-        AP{ci} = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);
+        AP = featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler, classifier);
     
         map = mean(AP{1});
         if map > maxmap

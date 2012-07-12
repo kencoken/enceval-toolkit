@@ -185,8 +185,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }
     else
     {
-        int seed = 42;
-        
+        //int seed = 42;
+        int seed = time(NULL);
+	
         mexPrintf("Setting up the model to random mean, var, and coef...");
         gmmproc.random_init(samples, seed);
     }

@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------
 * Encoding Methods Evaluation Toolkit                                *
-* Version 1.0                                                        *
+* Version 1.1                                                        *
 *                                                                    *
 * Author: Ken Chatfield (ken@robots.ox.ac.uk)                        *
 * Visual Geometry Group, University of Oxford                        *
@@ -13,7 +13,8 @@ iv.   Running the Demo
 v.    Customizing Parameters
 vi.   Notes on Performance
 vii.  Version History
-viii. Acknowledgements
+viii. GMM-Fisher Library
+ix.   Acknowledgements
 
 
 i. OVERVIEW
@@ -28,13 +29,14 @@ Currently the following encoding methods are supported:
 * Standard hard encoding
 * Kernel codebook encoding
 * Locality-constrained linear encoding
+* Fisher kernel
 
 These can be evaluated over the following datasets:
 
 * PASCAL VOC 2007
 
-Support for further encoding methods and datasets, including the
-Fisher encoding, will be provided in future releases.
+Support for further methods and datasets will be provided in
+future releases.
 
 ii. PAPER
 -----------------------------
@@ -99,6 +101,13 @@ This demo performs the following steps:
    (results compatible with PASCAL VOC 2007 development kit)
 
 The results thus obtained relate the row (y) in Table 1 of the paper.
+
+There are also sample launch scripts for the other supported encoding
+methods:
+
+* llcdemo.m   - Locality-constrained linear ecoding
+* kcbdemo.m   - Kernel codebook encoding
+* FKdemo.m    - Fisher kernel encoding
 
 NOTE 1: a single run of the pipeline is likely to take at least 3-4+
 hours. To speed things up, open a matlab pool by calling `matlabpool x'
@@ -185,13 +194,27 @@ spatial pyramid subbins by setting the following parameters:
 vii. VERSION HISTORY
 -------------------------
 
+Version 1.1 - (16 April 2012) Added support for Fisher kernel, bugfixes
 Version 1.0 - (7 November 2011) Initial release
 
-viii. ACKNOWLEDGEMENTS
+viii. GMM-FISHER LIBRARY
 -------------------------
 
-Thanks to Yuning Chai for the initial version of the
-locality-constrained linear coding implementation and Mayank Juneja
-for his help testing and validating the code. Parts of the code are
-also heavily inspired by the work of co-author Victor Lempitsky. IMDB
-ground truth data files provided by co-author Andrea Vedaldi.
+The code used to train GMM vocabularies and compute the Fisher kernel
+encoding is provided by the 'GMM-Fisher' sublibrary, found in the
+'lib/gmm-fisher/' subdirectory. This is a standalone C++ library with
+mex wrappers contributed kindly by Jorge Sánchez
+(jrg.sanchez@gmail.com). Thanks to both him and Florent Perronnin for
+their invaluable help and advice on getting this part of the toolkit
+up and running.
+
+ix. ACKNOWLEDGEMENTS
+-------------------------
+
+Thanks also to Karen Simonyan for doing a very thorough job of testing
+the code, contributing numerous bug-fixes and helping to generally
+speed it up and run more efficiently. Thanks are also due to Yuning
+Chai for the initial version of the locality-constrained linear coding
+implementation and co-author Victor Lempitsky, whose codebase
+heavily inspired the structure of the library. IMDB ground truth
+files are provided by co-author Andrea Vedaldi.

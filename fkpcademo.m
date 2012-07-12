@@ -13,7 +13,7 @@ prms.dimred = fullfile(DataDir,sprintf('data/dimred/pca_%d.mat', desc_dim)); % d
 prms.experiment.dataset = 'VOC2007'; % dataset name - currently only VOC2007 supported
 prms.experiment.evalusing = 'precrec'; % evaluation method - currently only precision recall supported
 
-prms.paths.dataset = '/work/ken/datasets_enceval'; % path to datasets
+prms.paths.dataset = !!<<< INSERT PATH TO DATASETS HERE >>>!!; % path to datasets
 prms.paths.codes = fullfile(DataDir,'data/codes/'); % path where codefiles should be stored
 prms.paths.compdata = fullfile(DataDir,'data/compdata/'); % path where all other compdata (kernel matrices, SVM models etc.) should be stored
 prms.paths.results = fullfile(DataDir,'data/results/'); % path where results should be stored

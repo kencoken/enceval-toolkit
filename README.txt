@@ -78,6 +78,8 @@ as follows:
 2. From within the encval-toolkit directory run the featpipem_setup.m
    script in MATLAB. This will compile all supporting MEX files for
    use on your system.
+3. Run the featpipem_addpaths.m script to add the required directories
+   from the gmm-fisher subpackage to your MATLAB path.
 
 iv. RUNNING THE DEMO
 -----------------------------

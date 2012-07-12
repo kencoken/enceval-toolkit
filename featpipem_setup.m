@@ -32,22 +32,11 @@ for i=1:length(mexCmds)
   eval(mexCmds{i});
 end
 
-% cd ../../
-% 
-% cd +featpipem/+classification/+svm/@LibLinearMex
-% 
-% mex -g -O manage_class.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
-% mex -g -O mextest.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
-% mex -g -O mextrain.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
-% 
-% cd ../@LibLinearTruncMex
-% 
-% mex -g -O manage_class.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
-% mex -g -O mextest.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
-% mex -g -O mextrain.cc -I/home/ken/lib/shared/vlfeat/vl -I/home/ken/lib/shared/liblinear-1.7 -I/home/ken/src/modules/featpipec/src -L/home/ken/src/modules/featpipec/lib -lfeatpipec
-% 
-% 
-% cd ../../../../
+cd ../../
 
+featpipem_addpaths;
 
+cd lib/gmm-fisher/matlab
+setup
+cd ../../../
 

@@ -206,7 +206,7 @@ The code used to train GMM vocabularies and compute the Fisher kernel
 encoding is provided by the 'GMM-Fisher' sublibrary, found in the
 'lib/gmm-fisher/' subdirectory. This is a standalone C++ library with
 mex wrappers contributed kindly by Jorge Sánchez
-(jrg.sanchez@gmail.com). Thanks to both him and Florent Perronnin for
+(jrg.sanchez@gmail.com). Thanks to both Jorge and Florent Perronnin for
 their invaluable help and advice on getting this part of the toolkit
 up and running.
 

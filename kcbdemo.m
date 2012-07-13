@@ -6,7 +6,7 @@ DataDir = pwd;
 prms.experiment.name = 'kcbdemo'; % experiment name - prefixed to all output files other than codes
 prms.experiment.codes_suffix = 'kcbdemo'; % string prefixed to codefiles (to allow sharing of codes between multiple experiments)
 prms.imdb = load(fullfile(DataDir,'imdb/imdb-VOC2007.mat')); % IMDB file
-prms.codebook = fullfile(DataDir,'data/codebooks/phow4k.mat'); % desired location of codebook
+prms.codebook = fullfile(DataDir, sprintf('data/codebooks/kmeans_%d.mat', voc_size)); % desired location of codebook
 prms.experiment.dataset = 'VOC2007'; % dataset name - currently only VOC2007 supported
 prms.experiment.evalusing = 'precrec'; % evaluation method - currently only precision recall supported
 

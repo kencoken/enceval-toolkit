@@ -196,7 +196,7 @@ spatial pyramid subbins by setting the following parameters:
 vii. VERSION HISTORY
 -------------------------
 
-Version 1.1 - (16 April 2012) Added support for Fisher kernel, bugfixes
+Version 1.1 - (16 July 2012) Added support for Fisher kernel, bugfixes
 Version 1.0 - (7 November 2011) Initial release
 
 viii. GMM-FISHER LIBRARY

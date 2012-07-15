@@ -111,11 +111,11 @@ function pcode = compute(obj, imsize, feats, frames)
         end
     end
     
-    if false
+    if true
         
         % now combine the first binset to make up the whole image bin
         if strcmp(obj.pool_type,'sum')
-            pcode(:, end) = pcode(:, 1 : obj.quad_divs ^ 2) * (feats_sel_num / sum(feats_sel_num));
+            pcode(:, end) = sum(pcode(:, 1 : obj.quad_divs ^ 2),2);% * (feats_sel_num / sum(feats_sel_num));
         elseif strcmp(obj.pool_type,'max')
             pcode(:,end) = max(pcode(:,1:obj.quad_divs^2),[],2);
         end

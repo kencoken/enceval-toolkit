@@ -111,7 +111,7 @@ function pcode = compute(obj, imsize, feats, frames)
         end
     end
     
-    if true
+    if false
         
         % now combine the first binset to make up the whole image bin
         if strcmp(obj.pool_type,'sum')

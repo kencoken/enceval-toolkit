@@ -10,7 +10,7 @@ prms.experiment.name = 'VLADtest'; % experiment name - prefixed to all output fi
 prms.experiment.codes_suffix = 'VLADtest'; % string prefixed to codefiles (to allow sharing of codes between multiple experiments)
 prms.experiment.classif_tag = ''; % additional string added at end of classifier and results files (useful for runs with different classifier parameters)
 prms.imdb = load(fullfile(DataDir,'imdb/imdb-VOC2007.mat')); % IMDB file
-prms.codebook = fullfile(DataDir, sprintf('data/codebooks/kmeans_%d.mat', VocSize)); % desired location of codebook
+prms.codebook = fullfile(DataDir, sprintf('data/codebooks/kmeans_%d.mat', voc_size)); % desired location of codebook
 prms.dimred = fullfile(DataDir, sprintf('data/dimred/PCA_%d.mat', desc_dim)); % desired location of low-dim projection matrix
 prms.experiment.dataset = 'VOC2007'; % dataset name - currently only VOC2007 supported
 prms.experiment.evalusing = 'precrec'; % evaluation method - currently only precision recall supported
@@ -43,7 +43,7 @@ end
 
 %% train/load codebook
 codebkgen = featpipem.codebkgen.KmeansCodebkGen(featextr, voc_size);
-[codebook, word_freq] = featpipem.wrapper.loadcodebook(codebkgen, prms);
+codebook = featpipem.wrapper.loadcodebook(codebkgen, prms);
 
 %% initialize encoder + pooler
 if hard_assign
@@ -61,7 +61,6 @@ else
 end
 
 encoder = featpipem.encoding.VLADEncoder(subencoder);
-encoder.word_freq = word_freq;
 
 pooler = featpipem.pooling.SPMPooler(encoder);
 pooler.subbin_norm_type = 'l2';

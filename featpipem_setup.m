@@ -20,6 +20,8 @@ elseif strcmp(archstr,'glnx86')
     command = 'mex -O LLCEncodeHelper.cpp -lmwlapack -lmwblas';
 elseif strcmp(archstr,'glnxa64')
     command = 'mex -O LLCEncodeHelper.cpp -lmwlapack -lmwblas -largeArrayDims';
+elseif strcmp(archstr,'maci64')
+    command = 'mex -O LLCEncodeHelper.cpp -lmwlapack -lmwblas -largeArrayDims';
 else
     error('System architecture could not be identified');
 end

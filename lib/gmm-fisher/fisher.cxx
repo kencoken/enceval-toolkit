@@ -247,7 +247,7 @@ fisher<T>::alpha_and_lp_normalization( T *fk )
       {
         pnorm += std::pow( std::fabs(fk[i]), (T)param.pnorm );
       }
-      pnorm = std::pow( pnorm, 1.0/(T)param.pnorm );
+      pnorm = std::pow( pnorm, (T)(1.0/param.pnorm ));
     }
 
     if( pnorm>0.0 )

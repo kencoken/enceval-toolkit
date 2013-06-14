@@ -1,23 +1,15 @@
-----------------------------------------------------------------------
-* Encoding Methods Evaluation Toolkit                                *
-* Version 1.1                                                        *
-*                                                                    *
-* Author: Ken Chatfield (ken@robots.ox.ac.uk)                        *
-* Visual Geometry Group, University of Oxford                        *
-----------------------------------------------------------------------
+Encoding Methods Evaluation Toolkit
+============================================
 
-i.    Overview
-ii.   Paper
-iii.  Installation
-iv.   Running the Demo
-v.    Customizing Parameters
-vi.   Notes on Performance
-vii.  Version History
-viii. GMM-Fisher Library
-ix.   Acknowledgements
+Author: Ken Chatfield, University of Oxford (ken@robots.ox.ac.uk)
 
+Copyright 2011-2013, all rights reserved.
 
-i. OVERVIEW
+Release: v1.2
+
+Licence: BSD (see COPYING file)
+
+Overview
 -----------------------------
 
 The encoding methods evaluation toolkit provides a unified framework
@@ -34,27 +26,37 @@ Currently the following encoding methods are supported:
 These can be evaluated over the following datasets:
 
 * PASCAL VOC 2007
+* Caltech 101
 
 Support for further methods and datasets will be provided in
 future releases.
 
-ii. PAPER
+Paper and Licencing
 -----------------------------
 
 Details relating to the supporting paper can be found on the research
 page at:
 
-http://www.robots.ox.ac.uk/~vgg/research/encoding_eval
+ * [http://www.robots.ox.ac.uk/~vgg/research/encoding_eval](http://www.robots.ox.ac.uk/~vgg/research/encoding_eval)
 
 If you use this code in your experiments, please cite:
 
-K. Chatfield, V. Lempitsky, A. Vedaldi, A. Zisserman
-The devil is in the details: an evaluation of recent feature encoding
-methods
-British Machine Vision Conference, 2011
-http://www.robots.ox.ac.uk/~vgg/publications/2011/Chatfield11/chatfield11.pdf
+    K. Chatfield, V. Lempitsky, A. Vedaldi, A. Zisserman
+    The devil is in the details: an evaluation of recent feature encoding methods
+    British Machine Vision Conference, 2011
+    
+A copy of the paper is available at:
 
-iii. INSTALLATION
+ * [http://www.robots.ox.ac.uk/~vgg/publications/2011/Chatfield11/chatfield11.pdf](http://www.robots.ox.ac.uk/~vgg/publications/2011/Chatfield11/chatfield11.pdf)
+
+This software is distributed under the BSD licence (see COPYING file).
+We are always interested in how this software is being used, so if you
+found this software useful or plan to make a release of code based on or
+using this package, it would be great to hear from you. Similarly,
+acknowledgements or citations to the above paper are appreciated.
+
+
+Installation
 -----------------------------
 
 The library requires the following libraries, which must be installed
@@ -78,10 +80,8 @@ as follows:
 2. From within the encval-toolkit directory run the featpipem_setup.m
    script in MATLAB. This will compile all supporting MEX files for
    use on your system.
-3. Run the featpipem_addpaths.m script to add the required directories
-   from the gmm-fisher subpackage to your MATLAB path.
 
-iv. RUNNING THE DEMO
+Running the Demo
 -----------------------------
 
 An example script, vqdemo.m, showing how the library is called can be
@@ -107,8 +107,8 @@ The results thus obtained relate the row (y) in Table 1 of the paper.
 There are also sample launch scripts for the other supported encoding
 methods:
 
-* llcdemo.m   - Locality-constrained linear ecoding
-* kcbdemo.m   - Kernel codebook encoding
+* LLCdemo.m   - Locality-constrained linear ecoding
+* KCBdemo.m   - Kernel codebook encoding
 * FKdemo.m    - Fisher kernel encoding
 
 NOTE 1: a single run of the pipeline is likely to take at least 3-4+
@@ -121,19 +121,21 @@ are also available on the website at:
 http://www.robots.ox.ac.uk/~vgg/software/enceval_toolkit for
 validation purposes.
 
-v. CUSTOMIZING PARAMETERS
+Customizing Parameters
 -------------------------
 
 The toolkit offers two main wrapper functions:
 
->> featpipem.wrapper.loadcodebook(codebkgen, prms)
-* Trains a dictionary of visual words
+    >> featpipem.wrapper.loadcodebook(codebkgen, prms)
+    
+Which trains a dictionary of visual words
 
->> featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler,
-                            classifier)
-* Evaluates performance over a dataset
+    >> featpipem.wrapper.dstest(prms, codebook, featextr, encoder, pooler,
+                                classifier)
+                                
+Which evaluates performance over a dataset
    
-`prms' is a structure containing experimental parameters of a general
+`prms1 is a structure containing experimental parameters of a general
 nature (name of the experiment, dataset to test over, paths to store
 computational data and final results, training splits to use). The
 other parameters are a series of classes relating to each step in the
@@ -158,30 +160,30 @@ With this code:
     encoder.max_comps = 500;
     encoder.norm_type = 'l2';
 
-and then pass the encoder thus instantiated to the `dstest' function
+and then pass the encoder thus instantiated to the `dstest` function
 as before. We have replaced an instance of the VQEncoder class with
 the LLCEncoder class - this is all that is required to change encoding
 method. Some classes also have additional properties which can be
 set. For example, for the LLCEncoder class it is also possible to
-specify the `beta' parameter as follows:
+specify the `beta` parameter as follows:
 
     encoder.beta = 1e-4;
 
 A set of default values is provided for all parameters in each
 class. For further details, refer to the class definitions in the
-`+featpipem' subfolder. Examples of how to call the code with the
+`+featpipem` subfolder. Examples of how to call the code with the
 locality-constrained linear coding and kernel codebook methods can be
-found in the enceval-toolkit directory (`llcdemo.m' and `kcbdemo.m'
+found in the enceval-toolkit directory (`llcdemo.m` and `kcbdemo.m`
 respectively).
 
-`llcdemo.m' and `kcbdemo.m' also demonstrate how to scan for an
-optimal SVM c parameter (when setting `scancparam' to true). Once the
+`LLCdemo.m` and `KCBdemo.m` also demonstrate how to scan for an
+optimal SVM c parameter (when setting `bCrossValSVM` to true). Once the
 result files for multiple values of the c parameter have been
-generated, use the `findbestperf' function in the `utility'
+generated, use the `findbestperf` function in the `utility`
 subdirectory to find the result file (and thus the c parameter) which
 offers the best performance.
 
-vi. NOTES ON PERFORMANCE
+Notes on Performance
 -------------------------
 
 For the example code provided with the toolkit, normalization of
@@ -193,24 +195,25 @@ spatial pyramid subbins by setting the following parameters:
     encoder.norm_type = 'l1' or 'l2'
     pooler.subbin_norm_type = 'l1' or 'l2'
 
-vii. VERSION HISTORY
+Version History
 -------------------------
 
-Version 1.1 - (16 July 2012) Added support for Fisher kernel, bugfixes
-Version 1.0 - (7 November 2011) Initial release
+* Version 1.2 - (14 June 2013) Bugfix release
+* Version 1.1 - (16 July 2012) Added support for Fisher kernel, bugfixes
+* Version 1.0 - (7 November 2011) Initial release
 
-viii. GMM-FISHER LIBRARY
+GMM-Fisher Library
 -------------------------
 
 The code used to train GMM vocabularies and compute the Fisher kernel
 encoding is provided by the 'GMM-Fisher' sublibrary, found in the
-'lib/gmm-fisher/' subdirectory. This is a standalone C++ library
+`lib/gmm-fisher/` subdirectory. This is a standalone C++ library
 contributed kindly by Jorge Sánchez. Thanks to both him
 and Florent Perronnin for
 their invaluable help and advice on getting this part of the toolkit
 up and running.
 
-ix. ACKNOWLEDGEMENTS
+Acknowledgements
 -------------------------
 
 Thanks also to Karen Simonyan for doing a very thorough job of testing
